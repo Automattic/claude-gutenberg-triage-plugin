@@ -1,0 +1,52 @@
+{
+  "issue": {
+    "number": 74447,
+    "title": "Global Styles: Additional CSS may not display any error on failure to save",
+    "state": "OPEN",
+    "author": "sirreal",
+    "url": "https://github.com/WordPress/gutenberg/issues/74447"
+  },
+  "labels": [
+    {
+      "name": "[Type] Bug",
+      "description": "An existing feature does not function as intended"
+    },
+    {
+      "name": "Global Styles",
+      "description": "Anything related to the broader Global Styles efforts, including Styles Engine and theme.json"
+    },
+    {
+      "name": "[Feature] Site Editor",
+      "description": "Related to the overarching Site Editor (formerly \"full site editing\")"
+    }
+  ],
+  "affected": {
+    "blocks": [],
+    "features": ["Global Styles", "Site Editor", "Additional CSS"]
+  },
+  "environment": {
+    "wordpress": "unknown",
+    "gutenberg": "unknown",
+    "theme": "block",
+    "plugins": ["gutenberg"]
+  },
+  "reproduction": {
+    "steps": [
+      "Visit `/wp-admin/site-editor.php?p=%2Fstyles&section=%2Fcss`.",
+      "Enter `/* </style> */` in the additional CSS input.",
+      "Open the network tab in the browser console to observe the failed save request.",
+      "Save the changes.",
+      "Notice that no error message is displayed.",
+      "Notice that the browser responds with a 400, the content has not been saved."
+    ],
+    "expected": "Error messages should be displayed when save fails",
+    "actual": "No error message is displayed, save silently fails with HTTP 400"
+  },
+  "context": {
+    "related_issues": [57245],
+    "comments_count": 0,
+    "reproduction_confirmed": null
+  },
+  "parseable": true,
+  "ambiguities": []
+}

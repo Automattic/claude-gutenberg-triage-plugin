@@ -1,0 +1,8 @@
+{
+  "name": "gutenberg-issue-triage",
+  "description": "Triage issues on the WordPress Gutenberg GitHub repository",
+  "version": "1.0.0",
+  "author": {
+    "name": "David Smith"
+  }
+}

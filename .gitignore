@@ -1,0 +1,17 @@
+# Claude Code local settings
+.claude/
+
+# macOS
+.DS_Store
+
+# Future: npm dependencies
+node_modules/
+
+# Future: triage output cache
+.triage/
+
+# Generated blueprints (keep templates, ignore generated)
+blueprint.json
+
+# Logs
+*.log
