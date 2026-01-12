@@ -371,7 +371,7 @@ CloudUp doesn't support OAuth device flow, so we can't do the "enter code" style
 1. Guide user to generate token on CloudUp website
 2. Securely capture token input
 3. Validate token works
-4. Store encrypted in user's home directory
+4. Store token in user's home directory (base64-encoded, not encrypted)
 
 This provides a smooth UX similar to device flow without requiring it.
 
