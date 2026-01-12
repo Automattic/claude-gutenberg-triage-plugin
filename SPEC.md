@@ -11,11 +11,11 @@ Given a "Bug" issue on the WordPress/gutenberg GitHub repo, the plugin:
 3. Reproduces the bug using Playwright in a Playground instance
 4. Reports findings to the user
 
-## Commands
+## Skills
 
-### Development Commands (build first)
+### Task Skills (build first)
 
-Each command has a specific input/output contract. Build and test independently, then compose.
+Each skill has a specific input/output contract. Build and test independently, then compose.
 
 #### `/parse-issue <issue>`
 
@@ -70,7 +70,7 @@ Summarize findings for the user.
 - Format human-readable summary
 - Include: environment tested, result, evidence, limitations
 
-### Unified Command (build last)
+### Unified Skill (build last)
 
 #### `/triage <issue>`
 
@@ -79,18 +79,16 @@ Run the full pipeline.
 **Input:** Issue number or URL
 **Output:** Console summary
 
-Wires together the same subroutines used by individual commands. Does NOT call commands - uses shared subroutines directly.
+Wires together the same subroutines used by individual skills. Does NOT call skills - uses shared subroutines directly.
 
 **Flags:**
 - `--dry-run` - Parse and build blueprint only, no reproduction
 
----
+### Domain Knowledge Skills
 
-## Skills (Domain Knowledge)
+Skills that provide reference knowledge (not task-oriented).
 
-Skills provide domain knowledge that commands can reference. They are NOT workflows.
-
-### `playground`
+#### `playground`
 
 Knowledge about WordPress Playground:
 - Blueprint schema and common patterns
@@ -98,7 +96,7 @@ Knowledge about WordPress Playground:
 - Environment defaults
 - Limitations and workarounds
 
-### `playwright`
+#### `playwright`
 
 Knowledge about Playwright MCP:
 - How to use browser automation tools
@@ -106,7 +104,7 @@ Knowledge about Playwright MCP:
 - Common patterns for WordPress admin
 - Error handling and evidence capture
 
-### `gutenberg`
+#### `gutenberg`
 
 Knowledge about Gutenberg/Block Editor:
 - Admin URLs and feature areas
@@ -114,7 +112,7 @@ Knowledge about Gutenberg/Block Editor:
 - Common UI elements and how to target them
 - Feature context (Global Styles, Navigation, Patterns, etc.)
 
-*Populated via Context7, WordPress docs, and manual curation.*
+*Populated via Context7 MCP, WordPress docs, and manual curation.*
 
 ---
 
@@ -122,19 +120,18 @@ Knowledge about Gutenberg/Block Editor:
 
 ```
 gutenberg-issue-triage/
-├── commands/
-│   ├── parse-issue.md
-│   ├── build-blueprint.md
-│   ├── reproduce.md
-│   ├── report.md
-│   └── triage.md              # Unified command (build last)
 ├── skills/
-│   ├── playground.md          # Playground domain knowledge
-│   ├── playwright.md          # Playwright domain knowledge
-│   └── gutenberg.md           # Gutenberg domain knowledge
-├── subroutines/               # Shared logic (extract after commands work)
+│   ├── parse-issue.md         # Task: parse GitHub issue
+│   ├── build-blueprint.md     # Task: generate blueprint
+│   ├── reproduce.md           # Task: run reproduction
+│   ├── report.md              # Task: summarize findings
+│   ├── triage.md              # Unified skill (build last)
+│   ├── playground.md          # Domain knowledge
+│   ├── playwright.md          # Domain knowledge
+│   └── gutenberg.md           # Domain knowledge
+├── subroutines/               # Shared logic (extract after skills work)
 ├── bin/
-│   └── playground.sh          # Playground lifecycle (used by /reproduce)
+│   └── playground.sh          # Playground lifecycle
 ├── fixtures/
 │   └── parsed-issues/         # Test fixtures
 ├── .triage/                   # Runtime files (gitignored)
@@ -285,11 +282,11 @@ This enables the `gutenberg` skill to pull current documentation context rather 
 
 ## Development Approach
 
-1. **Build commands independently** - Each command works standalone
+1. **Build skills independently** - Each skill works standalone
 2. **Define clear contracts** - Input/output formats documented
 3. **Test with fixtures** - Use `.triage/` files for isolated testing
 4. **Extract subroutines** - Once patterns emerge, refactor shared logic
-5. **Compose into /triage** - Final command uses subroutines, not commands
+5. **Compose into /triage** - Final skill uses subroutines, not other skills
 
 ---
 
