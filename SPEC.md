@@ -134,8 +134,10 @@ gutenberg-issue-triage/
 │   │   ├── SKILL.md           # [IMPLEMENTED] Generate Playground blueprints
 │   │   └── templates/
 │   │       └── default.json   # Default blueprint with Gutenberg
+│   ├── playground-runner/
+│   │   └── SKILL.md           # [IMPLEMENTED] Manage Playground lifecycle
 │   └── repro-runner/
-│       └── SKILL.md           # [NOT IMPLEMENTED] Execute reproduction
+│       └── SKILL.md           # [IMPLEMENTED] Execute reproduction with Playwright
 ├── fixtures/
 │   └── parsed-issues/         # Test fixtures for development
 │       └── *.json             # Parsed issue data (e.g., 74447.json)

@@ -76,15 +76,25 @@ Use the **playground-runner** skill to:
 3. Wait for it to be ready
 4. Output the URL
 
-**STOP HERE.** The following step is planned for future implementation:
+### Step 5: Run reproduction
 
-### Step 5: Run reproduction (not yet implemented)
-
-Will use the **repro-runner** skill to:
-1. Connect Playwright to the Playground URL
-2. Execute reproduction steps
-3. Capture evidence and report findings
-4. Stop Playground: `./bin/playground.sh stop`
+Use the **repro-runner** skill to:
+1. Create screenshots directory: `.triage/<issue>/screenshots/`
+2. Connect Playwright to the Playground URL
+3. Execute reproduction steps from parsed data:
+   - Navigate to required pages
+   - Interact with UI elements (type, click, etc.)
+   - Capture screenshots at key points
+4. Collect evidence:
+   - Console errors and warnings
+   - Network requests (especially failed requests)
+   - Screenshots saved to `.triage/<issue>/screenshots/`
+5. Determine reproduction result:
+   - ✅ REPRODUCED - Bug confirmed
+   - ❌ NOT REPRODUCED - Bug not present
+   - ⚠️ INCONCLUSIVE - Could not complete steps
+6. Report findings with evidence
+7. Stop Playground: `./bin/playground.sh stop`
 
 ## Output
 
@@ -92,6 +102,11 @@ Output:
 1. Parsed issue summary
 2. Generated blueprint
 3. Playground URL (when running)
+4. Reproduction results:
+   - Result classification (reproduced/not reproduced/inconclusive)
+   - Console errors and network issues
+   - Screenshots location: `.triage/<issue>/screenshots/`
+   - Detailed evidence and findings
 
 **IMPORTANT: Do not post anything to GitHub. This is a local-only tool.**
 
