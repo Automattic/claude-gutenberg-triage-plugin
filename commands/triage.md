@@ -68,18 +68,30 @@ Use the **blueprint-builder** skill to:
    - Determine landing page from first reproduction step
 4. Output the complete blueprint JSON
 
+### Step 4: Start Playground
+
+Use the **playground-runner** skill to:
+1. Save the blueprint to `.triage/<issue>.blueprint.json`
+2. Start Playground: `./bin/playground.sh start --blueprint=.triage/<issue>.blueprint.json`
+3. Wait for it to be ready
+4. Output the URL
+
 **STOP HERE.** The following step is planned for future implementation:
 
-### Step 4: Run reproduction (not yet implemented)
+### Step 5: Run reproduction (not yet implemented)
 
 Will use the **repro-runner** skill to:
-1. Start Playground with the generated blueprint
-2. Execute reproduction steps via Playwright
+1. Connect Playwright to the Playground URL
+2. Execute reproduction steps
 3. Capture evidence and report findings
+4. Stop Playground: `./bin/playground.sh stop`
 
 ## Output
 
-Output both the parsed issue summary AND the generated blueprint.
+Output:
+1. Parsed issue summary
+2. Generated blueprint
+3. Playground URL (when running)
 
 **IMPORTANT: Do not post anything to GitHub. This is a local-only tool.**
 
@@ -89,4 +101,12 @@ Output both the parsed issue summary AND the generated blueprint.
 /triage 74439
 /triage https://github.com/WordPress/gutenberg/issues/74439
 /triage 74447 --fixture
+```
+
+## Cleanup
+
+After triage is complete (or if interrupted), stop Playground:
+
+```bash
+./bin/playground.sh stop
 ```
