@@ -128,7 +128,9 @@ gutenberg-issue-triage/
 │   ├── triage.md              # Unified skill (build last)
 │   ├── playground.md          # Domain knowledge
 │   ├── playwright.md          # Domain knowledge
-│   └── gutenberg.md           # Domain knowledge
+│   ├── gutenberg.md           # Domain knowledge
+│   └── templates/
+│       └── default-blueprint.json
 ├── subroutines/               # Shared logic (extract after skills work)
 ├── bin/
 │   └── playground.sh          # Playground lifecycle
