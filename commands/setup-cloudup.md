@@ -379,7 +379,7 @@ This provides a smooth UX similar to device flow without requiring it.
 
 The CloudUp client checks credentials in this order:
 
-1. Stored token (`~/.claude/cloudup-token.json`)
+1. Stored token (`~/.claude/cloudup-credentials.json`)
 2. Environment variable (`$CLOUDUP_TOKEN`)
 3. Basic auth (`$CLOUDUP_USER` + `$CLOUDUP_PASS`)
 
