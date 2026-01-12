@@ -34,8 +34,8 @@ claude --plugin-dir /path/to/claude-gutenberg-triage-plugin
 Triage an issue:
 
 ```bash
-/triage 74447
-/triage https://github.com/WordPress/gutenberg/issues/74447
+/gutenberg-issue-triage:triage 74447
+/gutenberg-issue-triage:triage https://github.com/WordPress/gutenberg/issues/74447
 ```
 
 The plugin will parse the issue, generate a Playground blueprint, and start WordPress at `http://127.0.0.1:9400`.
