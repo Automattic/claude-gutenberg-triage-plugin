@@ -11,11 +11,37 @@ Given a "Bug" issue on the WordPress/gutenberg GitHub repo, the plugin:
 3. Reproduces the bug using Playwright in a Playground instance
 4. Reports findings to the user
 
+**Primary Interface:** Users run the `/triage` command, which orchestrates all steps. Individual skills provide implementation guidance and can be tested independently.
+
+## Commands
+
+Commands are user-facing entry points that orchestrate skills to accomplish complete workflows.
+
+### `/triage <issue>`
+
+Run the full end-to-end triage pipeline.
+
+**Input:** Issue number or URL
+**Output:** Console summary + artifact files
+
+**Process:**
+1. Parses the issue (follows `/parse-issue` workflow)
+2. Builds a blueprint (follows `/build-blueprint` workflow)
+3. Reproduces the bug (follows `/reproduce` workflow) - NOT YET IMPLEMENTED
+4. Reports findings (follows `/report` workflow) - NOT YET IMPLEMENTED
+
+**Current Status:** Steps 1-2 implemented, Steps 3-4 planned
+
+**Flags:**
+- `--dry-run` - Parse and build blueprint only, no reproduction (future)
+
+---
+
 ## Skills
 
 ### Task Skills (build first)
 
-Each skill has a specific input/output contract. Build and test independently, then compose.
+Each skill has a specific input/output contract and provides implementation guidance for commands.
 
 #### `/parse-issue <issue>`
 
@@ -70,20 +96,6 @@ Summarize findings for the user.
 - Format human-readable summary
 - Include: environment tested, result, evidence, limitations
 
-### Unified Skill (build last)
-
-#### `/triage <issue>`
-
-Run the full pipeline.
-
-**Input:** Issue number or URL
-**Output:** Console summary
-
-Wires together the same subroutines used by individual skills. Does NOT call skills - uses shared subroutines directly.
-
-**Flags:**
-- `--dry-run` - Parse and build blueprint only, no reproduction
-
 ### Domain Knowledge Skills
 
 Skills that provide reference knowledge (not task-oriented).
@@ -120,16 +132,18 @@ Knowledge about Gutenberg/Block Editor:
 
 ```
 gutenberg-issue-triage/
+├── commands/
+│   └── triage.md              # Main command: orchestrates full pipeline
 ├── skills/
 │   ├── parse-issue.md         # Task: parse GitHub issue
 │   ├── build-blueprint.md     # Task: generate blueprint
 │   ├── reproduce.md           # Task: run reproduction
 │   ├── report.md              # Task: summarize findings
-│   ├── triage.md              # Unified skill (build last)
 │   ├── playground.md          # Domain knowledge
 │   ├── playwright.md          # Domain knowledge
-│   └── gutenberg.md           # Domain knowledge
-├── subroutines/               # Shared logic (extract after skills work)
+│   ├── gutenberg.md           # Domain knowledge
+│   └── templates/
+│       └── default-blueprint.json
 ├── bin/
 │   └── playground.sh          # Playground lifecycle
 ├── fixtures/
@@ -148,6 +162,26 @@ gutenberg-issue-triage/
 ---
 
 ## Data Flow
+
+### Via /triage Command (Recommended)
+
+```
+/triage 74447
+     │
+     ├─► Parse issue workflow
+     │   └─► .triage/74447.parsed.json
+     │
+     ├─► Build blueprint workflow
+     │   └─► .triage/74447.blueprint.json
+     │
+     ├─► Reproduce workflow (TODO)
+     │   └─► .triage/74447.findings.json
+     │
+     └─► Report workflow (TODO)
+         └─► Console output
+```
+
+### Via Individual Skills (For Testing/Development)
 
 ```
 /parse-issue 74447
@@ -282,11 +316,11 @@ This enables the `gutenberg` skill to pull current documentation context rather 
 
 ## Development Approach
 
-1. **Build skills independently** - Each skill works standalone
-2. **Define clear contracts** - Input/output formats documented
-3. **Test with fixtures** - Use `.triage/` files for isolated testing
-4. **Extract subroutines** - Once patterns emerge, refactor shared logic
-5. **Compose into /triage** - Final skill uses subroutines, not other skills
+1. **Build skills independently** - Each skill provides clear implementation guidance
+2. **Define clear contracts** - Input/output formats documented for each workflow
+3. **Test skills in isolation** - Use individual skills to test workflows separately
+4. **Create commands** - Commands orchestrate skills to provide user-facing workflows
+5. **Iterate on implementation** - Commands read skill files and execute their described workflows
 
 ---
 

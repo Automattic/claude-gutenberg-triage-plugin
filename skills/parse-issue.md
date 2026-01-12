@@ -1,307 +1,208 @@
-# GitHub Issue Parser for Playground Blueprints & Playwright Tests
+---
+description: Parse a Gutenberg bug report into structured data
+allowed_args: issue
+---
 
-## Purpose
-Parse GitHub issues to extract structured information needed for creating WordPress Playground blueprints and generating reproducible Playwright test steps.
+# /parse-issue
 
-## When to Use This Skill
-- User provides a GitHub issue URL or content
-- User asks to create a playground blueprint from an issue
-- User requests Playwright test steps from a bug report
-- User needs to analyze issue reproduction steps
+Parse a WordPress Gutenberg bug report into structured reproduction data.
 
-## Core Workflow
+## Arguments
 
-### 1. Fetch and Parse the GitHub Issue
+- `issue` (required): Issue number or GitHub URL
 
-First, retrieve the issue content:
+## Output
+
+Writes to `.triage/<issue>.parsed.json`
+
+---
+
+## Process
+
+### 1. Fetch the issue and comments
+
 ```bash
-# If given a URL, fetch it
-curl -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{owner}/{repo}/issues/{number}
+gh issue view <number> --repo WordPress/gutenberg --json title,body,labels,state,comments,author
 ```
 
-Or use the `web_fetch` tool if the user provides a URL.
+Fetches issue body AND all comments (often contain critical context).
 
-### 2. Extract Key Information
+### 2. Validate it's a bug report
 
-Parse the issue for these essential elements:
+Check that:
+- Issue has the `[Type] Bug` label
+- Issue state is `open` (warn if closed but continue)
 
-#### A. Environment Information
-- WordPress version
-- PHP version
-- Theme name and version
-- Plugin names and versions
-- Browser information
-- Device/OS details
+If not a bug report, stop and inform the user.
 
-#### B. Reproduction Steps
-- Look for sections titled: "Steps to Reproduce", "To Reproduce", "Reproduction Steps"
-- Extract numbered or bulleted steps
-- Identify prerequisite setup requirements
-- Note any specific content or configuration needed
+### 3. Parse and understand labels
 
-#### C. Expected vs Actual Behavior
-- Expected outcome
-- Actual outcome/bug description
-- Screenshots or video references
+Gutenberg uses a structured label taxonomy. Extract ALL labels for context.
 
-#### D. Code Snippets
-- Custom code mentioned in the issue
-- Configuration settings
-- Error messages or logs
+**Label prefixes:**
 
-### 3. Generate Playground Blueprint
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `[Type]` | Issue type | `[Type] Bug` |
+| `[Status]` | Workflow state | `[Status] Needs Testing` |
+| `[Block]` | Affected block | `[Block] Navigation` |
+| `[Feature]` | Affected feature | `[Feature] Patterns` |
+| `[Package]` | npm package | `[Package] Components` |
+| `[Focus]` | Area of focus | `[Focus] Accessibility` |
 
-Create a JSON blueprint structure with these sections:
+**Use labels to disambiguate steps:**
+- If `[Block] More` is present and steps mention "the block", it's the More block
+- If `[Feature] Block Visibility` is present and steps say "set to Hide", it's the visibility toggle
+- Label descriptions often contain helpful context
+
+### 4. Extract context from comments
+
+Comments often contain critical information missing from the original report.
+
+**Look for:**
+- **Feature names**: Maintainers often name the specific feature
+- **Technical explanations**: How the feature works
+- **Clarifications**: Reporter or maintainers clarifying steps
+- **Related issues/PRs**: Links to context
+- **Reproduction confirmations**: Others confirming the bug
+
+**Comment signals:**
+- Comments from `MEMBER` or `CONTRIBUTOR` carry more weight
+- "This is related to..." or "This happens because..." explains root cause
+
+### 5. Parse template sections
+
+Gutenberg bug template sections (identified by `### ` headings):
+
+| Section | Required | Content |
+|---------|----------|---------|
+| `### Description` | Yes | What the bug is |
+| `### Step-by-step reproduction instructions` | Yes | Numbered steps |
+| `### Screenshots, screen recording, code snippet` | No | Visual evidence |
+| `### Environment info` | Yes | WP/Gutenberg versions |
+| `### Please confirm...` | No | Checkboxes, ignore |
+
+### 6. Extract environment details
+
+From `### Environment info`:
+
+- **WordPress version**: `WordPress 6.9`, `WP 6.8`, `6.7.1`
+- **Gutenberg version**: `Gutenberg trunk`, `Gutenberg 20.0`, `built-in/core`
+- **Theme type**: Block, Classic, or Hybrid
+
+If missing, note as `unknown`.
+
+### 7. Parse reproduction steps
+
+From `### Step-by-step reproduction instructions`:
+
+- Extract numbered steps (1., 2., 3.)
+- Preserve exact wording
+- Flag ambiguous steps
+
+**Ambiguity indicators:**
+- Vague actions: "click around", "navigate somewhere"
+- Missing specifics: "click the button" (which button?)
+- Assumes context: "in the editor" (which editor?)
+- External dependencies: "install plugin X"
+
+### 8. Identify expected vs actual
+
+Extract from `### Description` or explicit sections:
+- What should happen (expected)
+- What actually happens (actual)
+
+### 9. Write parsed data
+
+Write to `.triage/<issue>.parsed.json`:
 
 ```json
 {
-  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
-  "landingPage": "/wp-admin/",
-  "preferredVersions": {
-    "php": "8.0",
-    "wp": "latest"
+  "issue": {
+    "number": 74447,
+    "title": "...",
+    "state": "OPEN",
+    "author": "username",
+    "url": "https://github.com/..."
   },
-  "steps": [
-    {
-      "step": "login",
-      "username": "admin",
-      "password": "password"
-    }
-  ]
+  "labels": [
+    { "name": "[Type] Bug", "description": "..." },
+    { "name": "[Block] Navigation", "description": "..." }
+  ],
+  "affected": {
+    "blocks": ["Navigation"],
+    "features": ["Site Editor"]
+  },
+  "environment": {
+    "wordpress": "latest",
+    "gutenberg": "latest",
+    "theme": "block",
+    "plugins": ["gutenberg"]
+  },
+  "reproduction": {
+    "steps": ["Step 1", "Step 2"],
+    "expected": "What should happen",
+    "actual": "What actually happens"
+  },
+  "context": {
+    "related_issues": [12345],
+    "comments_count": 5,
+    "reproduction_confirmed": true,
+    "feature_names": ["block visibility"]
+  },
+  "parseable": true,
+  "ambiguities": ["Step 3 unclear: which button?"]
 }
 ```
 
-#### Blueprint Step Types to Consider:
+### 10. Output summary
 
-**installPlugin**
-```json
-{
-  "step": "installPlugin",
-  "pluginZipFile": {
-    "resource": "wordpress.org/plugins",
-    "slug": "plugin-name"
-  }
-}
+```
+ISSUE PARSED: #<number>
+Title: <title>
+State: <open/closed>
+
+LABELS:
+- [Type] Bug: An existing feature does not function as intended
+- [Feature] Site Editor: Related to the Site Editor
+...
+
+AFFECTED:
+- Blocks: <list>
+- Features: <list>
+
+ENVIRONMENT:
+- WordPress: <version>
+- Gutenberg: <version>
+- Theme: <type>
+
+REPRODUCTION STEPS:
+1. <step>
+2. <step>
+...
+
+EXPECTED: <what should happen>
+ACTUAL: <what happens instead>
+
+AMBIGUITIES:
+- <any unclear steps>
+
+OUTPUT: .triage/<issue>.parsed.json
 ```
 
-**installTheme**
-```json
-{
-  "step": "installTheme",
-  "themeZipFile": {
-    "resource": "wordpress.org/themes",
-    "slug": "theme-name"
-  }
-}
-```
+---
 
-**activatePlugin**
-```json
-{
-  "step": "activatePlugin",
-  "pluginPath": "plugin-name/plugin-name.php"
-}
-```
+## Fallback: Non-template issues
 
-**activateTheme**
-```json
-{
-  "step": "activateTheme",
-  "themeFolderName": "theme-name"
-}
-```
+If issue doesn't follow template:
+1. Attempt best-effort extraction
+2. Look for keywords: "steps", "reproduce", "expected", "actual", "version"
+3. Flag as `parseable: false` with notes on what's missing
 
-**runPHP**
-```json
-{
-  "step": "runPHP",
-  "code": "<?php // PHP code here ?>"
-}
-```
+---
 
-**writeFile**
-```json
-{
-  "step": "writeFile",
-  "path": "/wordpress/wp-content/mu-plugins/custom.php",
-  "data": "<?php // Custom code ?>"
-}
-```
+## Error Cases
 
-**defineWpConfigConsts**
-```json
-{
-  "step": "defineWpConfigConsts",
-  "consts": {
-    "WP_DEBUG": true,
-    "WP_DEBUG_LOG": true
-  }
-}
-```
-
-**mkdir**
-```json
-{
-  "step": "mkdir",
-  "path": "/wordpress/wp-content/uploads/custom"
-}
-```
-
-**cp** (copy files)
-```json
-{
-  "step": "cp",
-  "fromPath": "/source/file.txt",
-  "toPath": "/destination/file.txt"
-}
-```
-
-### 4. Generate Playwright Reproduction Steps
-
-Transform the manual reproduction steps into Playwright test code:
-
-#### Basic Test Structure
-```javascript
-import { test, expect } from '@playwright/test';
-
-test('Issue #XXX: [Brief description]', async ({ page }) => {
-  // Setup: Navigate to WordPress admin
-  await page.goto('http://localhost:8881/wp-admin/');
-  
-  // Login if needed
-  await page.fill('#user_login', 'admin');
-  await page.fill('#user_pass', 'password');
-  await page.click('#wp-submit');
-  
-  // Reproduction steps
-  // Step 1: [Description]
-  // Step 2: [Description]
-  
-  // Assertion: Verify expected vs actual behavior
-  // await expect(page.locator('...')).toBeVisible();
-});
-```
-
-#### Common Playwright Patterns
-
-**Navigation**
-```javascript
-await page.goto('/wp-admin/post-new.php');
-await page.click('a:has-text("Pages")');
-```
-
-**Form Interactions**
-```javascript
-await page.fill('#title', 'Test Post');
-await page.fill('#content', 'Post content');
-await page.click('button:has-text("Publish")');
-```
-
-**Block Editor Actions**
-```javascript
-// Add a block
-await page.click('button[aria-label="Add block"]');
-await page.fill('input[placeholder="Search"]', 'paragraph');
-await page.click('button:has-text("Paragraph")');
-
-// Type in block
-await page.keyboard.type('Sample text');
-```
-
-**Waiting for Elements**
-```javascript
-await page.waitForSelector('.notice-success');
-await page.waitForLoadState('networkidle');
-```
-
-**Assertions**
-```javascript
-await expect(page.locator('.error-message')).toBeVisible();
-await expect(page.locator('#title')).toHaveValue('Expected Title');
-```
-
-## Output Format
-
-Provide the user with:
-
-1. **Playground Blueprint** (as JSON file)
-2. **Playwright Test Steps** (as JavaScript/TypeScript file)
-3. **Summary Document** explaining:
-   - What was extracted from the issue
-   - Any assumptions made
-   - Missing information that needs clarification
-   - How to run the blueprint and tests
-
-## Example Output Structure
-
-Create three files:
-
-### blueprint.json
-Complete blueprint configuration
-
-### reproduce-issue.spec.js
-Playwright test with detailed steps
-
-### README.md
-```markdown
-# Issue #XXX Reproduction
-
-## Summary
-[Brief description of the issue]
-
-## Environment
-- WordPress: [version]
-- PHP: [version]
-- Plugins: [list]
-- Theme: [name]
-
-## Running the Playground
-```bash
-npx @wp-playground/cli --blueprint=blueprint.json
-```
-
-## Running the Playwright Test
-```bash
-npx playwright test reproduce-issue.spec.js
-```
-
-## Notes
-[Any assumptions, missing info, or special instructions]
-```
-
-## Best Practices
-
-1. **Be Explicit**: Include all setup steps even if they seem obvious
-2. **Version Specificity**: Use specific versions when mentioned in the issue
-3. **Selectors**: Use semantic selectors (ARIA labels, text content) over brittle CSS selectors
-4. **Wait Appropriately**: Add waits for dynamic content and network requests
-5. **Assertions**: Include checks for both expected and actual behavior
-6. **Comments**: Document each step clearly for maintainability
-7. **Cleanup**: Consider teardown steps if needed
-8. **Idempotency**: Ensure tests can run multiple times
-
-## Troubleshooting Common Issues
-
-### Missing Plugin/Theme
-If a plugin/theme isn't on WordPress.org:
-- Use `installPlugin` with `pluginZipFile.url` pointing to a direct download
-- Or note in README that manual installation is required
-
-### Complex Setup
-For intricate configurations:
-- Use `runPHP` steps to execute setup scripts
-- Consider breaking into multiple smaller blueprints
-- Document dependencies clearly
-
-### Dynamic Content
-For tests with dynamic IDs or content:
-- Use flexible selectors (text content, ARIA labels)
-- Use `page.locator()` with filters
-- Avoid hardcoded IDs when possible
-
-## Additional Resources
-
-- [WordPress Playground Documentation](https://wordpress.github.io/wordpress-playground/)
-- [Playwright Documentation](https://playwright.dev/)
-- [Blueprint Schema](https://playground.wordpress.net/blueprint-schema.json)
-
+- **Not a bug**: Lacks `[Type] Bug` label → inform user, stop
+- **Empty body**: No content → inform user, stop
+- **No steps found**: Can't identify steps → flag, ask user for guidance
