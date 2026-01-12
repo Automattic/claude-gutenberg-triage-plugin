@@ -1,63 +1,43 @@
-# Blueprint Builder Skill
+---
+description: Generate a Playground blueprint from parsed issue data
+allowed_args: issue
+---
 
-Generate WordPress Playground blueprints for reproducing Gutenberg bug reports.
+# /build-blueprint
 
-## Purpose
+Generate a WordPress Playground blueprint from parsed issue data.
 
-Transform parsed issue data into a Playground blueprint that matches the reported environment.
+## Arguments
+
+- `issue` (required): Issue number
 
 ## Input
 
-This skill receives the **parsed issue output** from the issue-parser skill. It does NOT re-fetch or re-parse the issue.
+Reads from `.triage/<issue>.parsed.json`
 
-Key fields used:
-- `ENVIRONMENT.WordPress` - Target WP version
-- `ENVIRONMENT.Gutenberg` - Target Gutenberg version
-- `ENVIRONMENT.Theme` - Theme type (block/classic)
-- `REPRODUCTION STEPS` - To determine landing page
+## Output
 
-## Default Blueprint Template
+Writes to `.triage/<issue>.blueprint.json`
 
-Most Gutenberg bug reports need:
-1. WordPress with Gutenberg plugin installed
-2. Admin user logged in
-3. A block theme active (Twenty Twenty-Five)
-
-Start with this base and customize per issue:
-
-```json
-{
-  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
-  "landingPage": "/wp-admin/",
-  "preferredVersions": {
-    "php": "8.2",
-    "wp": "latest"
-  },
-  "features": {
-    "networking": true
-  },
-  "steps": [
-    {
-      "step": "installPlugin",
-      "pluginData": {
-        "resource": "wordpress.org/plugins",
-        "slug": "gutenberg"
-      }
-    },
-    {
-      "step": "login",
-      "username": "admin",
-      "password": "password"
-    }
-  ]
-}
-```
+---
 
 ## Process
 
-### 1. Determine WordPress version
+### 1. Load parsed issue data
 
-From parsed `ENVIRONMENT.WordPress`:
+Read `.triage/<issue>.parsed.json` and extract:
+- `environment.wordpress` - Target WP version
+- `environment.gutenberg` - Target Gutenberg version
+- `environment.theme` - Theme type (block/classic)
+- `reproduction.steps` - To determine landing page
+
+### 2. Start with default template
+
+Load `skills/templates/default-blueprint.json` as the base.
+
+### 3. Determine WordPress version
+
+From `environment.wordpress`:
 
 | Parsed Value | Blueprint `wp` Value |
 |--------------|---------------------|
@@ -65,9 +45,9 @@ From parsed `ENVIRONMENT.WordPress`:
 | `trunk`, `nightly` | `"nightly"` |
 | `latest`, `unknown`, empty | `"latest"` |
 
-### 2. Determine Gutenberg version
+### 4. Determine Gutenberg version
 
-From parsed `ENVIRONMENT.Gutenberg`:
+From `environment.gutenberg`:
 
 | Parsed Value | Action |
 |--------------|--------|
@@ -76,22 +56,42 @@ From parsed `ENVIRONMENT.Gutenberg`:
 | `20.0`, `Gutenberg 20.0` | Use `"resource": "wordpress.org/plugins"` (latest from .org) |
 | `latest`, `unknown`, empty | Use `"resource": "wordpress.org/plugins"` with slug `gutenberg` |
 
-**Gutenberg nightly URL pattern:**
+**Gutenberg nightly URL:**
 ```
 https://playground.wordpress.net/gutenberg.zip
 ```
 
-### 3. Determine theme
+**Specific version URL pattern:**
+```
+https://downloads.wordpress.org/plugin/gutenberg.19.9.0.zip
+```
 
-From parsed `ENVIRONMENT.Theme`:
+### 5. Determine theme
+
+From `environment.theme`:
 
 | Parsed Value | Action |
 |--------------|--------|
-| `block`, `Twenty Twenty-Five`, unknown | No change (TT5 is default block theme) |
-| `classic`, `Twenty Twenty-One` | Add `installTheme` + `activateTheme` step for TT1 |
+| `block`, `Twenty Twenty-Five`, unknown | No change (TT5 is default) |
+| `classic`, `Twenty Twenty-One` | Add `installTheme` + `activateTheme` for classic theme |
 | Specific theme name | Add steps for that theme |
 
-### 4. Determine landing page
+**Classic theme example:**
+```json
+{
+  "step": "installTheme",
+  "themeData": {
+    "resource": "wordpress.org/themes",
+    "slug": "flavor"
+  }
+},
+{
+  "step": "activateTheme",
+  "themeFolderName": "flavor"
+}
+```
+
+### 6. Determine landing page
 
 Analyze the first reproduction step to set `landingPage`:
 
@@ -100,14 +100,15 @@ Analyze the first reproduction step to set `landingPage`:
 | "site editor", "site-editor.php" | `/wp-admin/site-editor.php` |
 | "create a new post", "add new post" | `/wp-admin/post-new.php` |
 | "create a new page", "add new page" | `/wp-admin/post-new.php?post_type=page` |
-| "edit a post", "open a post" | Create a post first, then land on edit screen |
+| "edit a post", "open a post" | Create post first, then land on edit screen |
 | "widgets", "widget editor" | `/wp-admin/widgets.php` |
 | "patterns", "pattern" | `/wp-admin/site-editor.php?postType=wp_block` |
 | "navigation", "menus" | `/wp-admin/site-editor.php?postType=wp_navigation` |
 | "styles", "global styles" | `/wp-admin/site-editor.php?path=%2Fwp_global_styles` |
+| "additional css" | `/wp-admin/site-editor.php?p=%2Fstyles&section=%2Fcss` |
 | Default | `/wp-admin/` |
 
-### 5. Add content if needed
+### 7. Add content if needed
 
 If reproduction requires existing content:
 
@@ -127,21 +128,13 @@ If reproduction requires existing content:
 }
 ```
 
-## Output
+### 8. Write blueprint and report
 
-Output a complete, valid Blueprint JSON that can be:
-1. Saved to a file for `wp-playground run-blueprint`
-2. Passed directly to the Playground CLI
+1. Write final blueprint to `.triage/<issue>.blueprint.json`
+2. Output summary:
 
-Format:
 ```
-BLUEPRINT GENERATED:
-
-```json
-{
-  // Complete blueprint here
-}
-```
+BLUEPRINT GENERATED: .triage/<issue>.blueprint.json
 
 CUSTOMIZATIONS APPLIED:
 - WordPress version: <version> (reason)
@@ -151,16 +144,15 @@ CUSTOMIZATIONS APPLIED:
 - Additional steps: <list if any>
 
 PLAYGROUND CLI COMMAND:
-npx @wp-playground/cli server --blueprint=blueprint.json
-
-READY FOR: repro-runner skill
+./bin/playground.sh start --blueprint=.triage/<issue>.blueprint.json
 ```
+
+---
 
 ## Special Cases
 
-### Issue specifies "Gutenberg trunk"
+### Gutenberg trunk/nightly
 
-Use the Playground-hosted nightly build:
 ```json
 {
   "step": "installPlugin",
@@ -171,9 +163,8 @@ Use the Playground-hosted nightly build:
 }
 ```
 
-### Issue requires specific plugin version
+### Specific Gutenberg version
 
-If a specific Gutenberg version is required and it's not the latest:
 ```json
 {
   "step": "installPlugin",
@@ -184,23 +175,13 @@ If a specific Gutenberg version is required and it's not the latest:
 }
 ```
 
-### Issue requires classic theme
+### No Gutenberg (core only)
 
-```json
-{
-  "step": "installTheme",
-  "themeData": {
-    "resource": "wordpress.org/themes",
-    "slug": "flavor"
-  }
-},
-{
-  "step": "activateTheme",
-  "themeFolderName": "flavor"
-}
-```
+Remove the Gutenberg installPlugin step entirely.
 
-## Error Cases
+---
+
+## Error Handling
 
 - **Cannot determine environment**: Use defaults, note in output
 - **Conflicting requirements**: Flag for user decision

@@ -1,52 +1,38 @@
 ---
-description: Triage a Gutenberg bug issue by parsing, reproducing, and reporting findings
+description: Run full triage pipeline for a Gutenberg bug report
 allowed_args: issue
 ---
 
-# Triage Command
+# /triage
 
-Parse, configure, and reproduce a WordPress Gutenberg bug report.
+Run the full end-to-end triage pipeline for a Gutenberg issue.
 
 ## Arguments
 
-- `issue` (required): GitHub issue number (e.g., `74439`) or full URL (e.g., `https://github.com/WordPress/gutenberg/issues/74439`)
-
-## Flags
-
-- `--fixture`: Load parsed data from `fixtures/parsed-issues/<issue>.json` instead of fetching live. Use for testing skills without re-parsing.
-
-## Prerequisites
-
-Before starting, verify the GitHub CLI is available (skip if using `--fixture`):
-
-- Run `gh --version` to confirm `gh` is installed and authenticated
-
-If the prerequisite is missing, stop and inform the user what needs to be installed.
+- `issue` (required): Issue number or GitHub URL
 
 ## Process
 
-**IMPORTANT:** Parse the issue ONCE in Step 2. The parsed data stays in context and is used by subsequent steps. Do NOT re-fetch or re-parse the issue.
+Execute these steps in sequence:
 
-### Step 1: Validate input
+1. **Parse the issue**
+   - Fetch issue data and extract reproduction steps
+   - Write to `.triage/<issue>.parsed.json`
 
-Parse the issue argument:
-- If it's a number (e.g., `74439`), use it directly
-- If it's a URL, extract the issue number from the path
-- If invalid, inform the user and stop
+2. **Build a blueprint**
+   - Generate Playground blueprint from parsed data
+   - Write to `.triage/<issue>.blueprint.json`
 
-### Step 2: Parse the issue (or load fixture)
+3. **Reproduce the bug** (NOT YET IMPLEMENTED)
+   - Start Playground with the blueprint
+   - Execute reproduction steps via browser automation
+   - Write to `.triage/<issue>.findings.json`
 
-**If `--fixture` flag is present:**
-1. Load parsed data from `fixtures/parsed-issues/<issue>.json`
-2. Output a brief summary confirming fixture loaded
-3. Skip to Step 3
+4. **Report findings** (NOT YET IMPLEMENTED)
+   - Summarize reproduction results
+   - Output console summary
 
-**Otherwise, use the issue-parser skill to:**
-1. Fetch the issue from WordPress/gutenberg via `gh issue view`
-2. Validate it has the `[Type] Bug` label
-3. Extract structured data: steps, environment, expected/actual behaviour
-4. Extract context from labels and comments
-5. Output the parsed summary
+## Current Status
 
 The parsed output includes:
 - `environment` (wordpress, gutenberg, theme)
@@ -125,3 +111,5 @@ After triage is complete (or if interrupted), stop Playground:
 ```bash
 ./bin/playground.sh stop
 ```
+Steps 1-3 are implemented. Steps 4 are planned but not yet available.
+
