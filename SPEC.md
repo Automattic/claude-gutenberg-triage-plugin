@@ -6,116 +6,115 @@ A Claude Code plugin that automatically attempts to reproduce WordPress Gutenber
 
 Given a "Bug" issue on the WordPress/gutenberg GitHub repo, the plugin:
 
-1. Reads and parses the issue (steps, expected vs actual behaviour, environment details)
+1. Parses the issue (steps, expected vs actual behaviour, environment details)
 2. Generates a Playground Blueprint matching the reported environment
-3. Spins up a local WordPress Playground instance
-4. Uses Playwright (via MCP) to attempt reproduction
-5. Reports findings to the user
+3. Reproduces the bug using Playwright in a Playground instance
+4. Reports findings to the user
 
-## Command
+## Commands
 
-```
-/triage <issue>
-```
+### Development Commands (build first)
 
-**Input formats accepted:**
-- Issue number: `12345`
-- Full URL: `https://github.com/WordPress/gutenberg/issues/12345`
+Each command has a specific input/output contract. Build and test independently, then compose.
+
+#### `/parse-issue <issue>`
+
+Parse a Gutenberg bug report into structured data.
+
+**Input:** Issue number or URL
+**Output:** `.triage/<issue>.parsed.json`
+
+**Responsibilities:**
+- Fetch issue via `gh` CLI
+- Validate it has `[Type] Bug` label
+- Extract: steps, expected/actual behaviour, environment details
+- Handle both template-based and free-form issues
+
+#### `/build-blueprint <issue>`
+
+Generate a Playground blueprint from parsed issue data.
+
+**Input:** `.triage/<issue>.parsed.json`
+**Output:** `.triage/<issue>.blueprint.json`
+
+**Responsibilities:**
+- Read parsed issue data
+- Map environment to blueprint config (WP version, Gutenberg, theme)
+- Determine landing page from reproduction steps
+- Output valid Playground blueprint JSON
+
+#### `/reproduce <issue>`
+
+Start Playground and attempt to reproduce the bug.
+
+**Input:** `.triage/<issue>.parsed.json` + `.triage/<issue>.blueprint.json`
+**Output:** `.triage/<issue>.findings.json`
+
+**Responsibilities:**
+- Start Playground with blueprint
+- Navigate to landing page
+- Execute reproduction steps via Playwright MCP
+- Capture evidence (screenshots, console errors, observed state)
+- Stop Playground
+- Output structured findings
+
+#### `/report <issue>`
+
+Summarize findings for the user.
+
+**Input:** `.triage/<issue>.findings.json`
+**Output:** Console summary (Phase 2: GitHub comment)
+
+**Responsibilities:**
+- Read findings
+- Format human-readable summary
+- Include: environment tested, result, evidence, limitations
+
+### Unified Command (build last)
+
+#### `/triage <issue>`
+
+Run the full pipeline.
+
+**Input:** Issue number or URL
+**Output:** Console summary
+
+Wires together the same subroutines used by individual commands. Does NOT call commands - uses shared subroutines directly.
 
 **Flags:**
-- `--dry-run` - Plan only, no Playground/Playwright execution
-
-## Skills (MVP)
-
-### 1. `issue-parser`
-
-Extracts structured data from Gutenberg bug reports.
-
-**Responsibilities:**
-- Parse official Gutenberg bug report template (strict)
-- Fall back to best-effort extraction for free-form issues
-- Extract: steps to reproduce, expected behaviour, actual behaviour, environment details
-
-**Output:** Structured reproduction plan
-
-### 2. `blueprint-builder`
-
-Generates WordPress Playground configuration.
-
-**Responsibilities:**
-- Map issue environment details to Playground CLI arguments
-- Target WP/Gutenberg versions specified in issue
-- Fall back to latest if versions unspecified
-
-**Output:** Playground CLI arguments (e.g. `--wp=6.5 --plugin=gutenberg`)
-
-**Note:** MVP uses CLI args. Full Blueprint JSON deferred to Phase 2 if needed.
-
-### 3. `repro-runner`
-
-Orchestrates Playwright to execute reproduction steps.
-
-**Responsibilities:**
-- Translate parsed steps into Playwright actions
-- Use role/name-based targeting and accessibility tree data
-- Record what was attempted and outcomes
-- Capture evidence (console errors, observed UI state)
-
-**Output:** Reproduction result (reproduced / not reproduced / inconclusive)
-
-## Technical Requirements
-
-### Prerequisites (checked upfront)
-
-- `gh` CLI authenticated with access to WordPress/gutenberg
-- `npx` available (for Playground CLI)
-- Playwright MCP server connected
-
-### Environment Strategy
-
-1. Try to match WP/Gutenberg versions specified in issue
-2. Fall back to latest WordPress trunk + Gutenberg plugin if unspecified
-
-### Playground Management
-
-- Fresh instance per run
-- Tear down after reproduction completes
-
-### Failure Handling
-
-When reproduction fails or is inconclusive:
-- Output brief summary of what was attempted
-- Prompt user for guidance on next steps
-
-## Output (MVP)
-
-**IMPORTANT: No GitHub posting in MVP. Console output only.**
-
-Structured summary including:
-- Environment tested (WP version, Gutenberg version)
-- Reproduction result
-- Evidence (console errors, observed behaviour)
-- Limitations or missing info if applicable
-
-## Non-Goals (MVP)
-
-- GitHub comment posting (Phase 2)
-- Version comparison - beta vs stable (Phase 2)
-- Gutenberg-specific UI macros beyond basic clicks (Phase 2)
-- Confidence scoring (Phase 2)
-- Issue closing, labeling, or moderation (never)
-- Non-Playground server setups or proprietary plugins (never)
+- `--dry-run` - Parse and build blueprint only, no reproduction
 
 ---
 
-## Phase 2 (Future)
+## Skills (Domain Knowledge)
 
-- `report-formatter` skill for GitHub comment generation
-- `--compare-stable` flag for version comparison
-- Skills for common Gutenberg flows (Site Editor, Navigation block, List View)
-- Smarter ambiguity handling + confidence scores
-- `--no-comment` mode for local testing with full pipeline
-- Output to `.triage/<issue-number>.md` files
+Skills provide domain knowledge that commands can reference. They are NOT workflows.
+
+### `playground`
+
+Knowledge about WordPress Playground:
+- Blueprint schema and common patterns
+- CLI options and usage
+- Environment defaults
+- Limitations and workarounds
+
+### `playwright`
+
+Knowledge about Playwright MCP:
+- How to use browser automation tools
+- Selector strategies (role-based, accessibility tree)
+- Common patterns for WordPress admin
+- Error handling and evidence capture
+
+### `gutenberg`
+
+Knowledge about Gutenberg/Block Editor:
+- Admin URLs and feature areas
+- UI terminology (inserter, list view, inspector, etc.)
+- Common UI elements and how to target them
+- Feature context (Global Styles, Navigation, Patterns, etc.)
+
+*Populated via Context7, WordPress docs, and manual curation.*
 
 ---
 
@@ -123,58 +122,190 @@ Structured summary including:
 
 ```
 gutenberg-issue-triage/
-├── .claude-plugin/
-│   └── plugin.json
 ├── commands/
-│   └── triage.md              # /triage command definition
+│   ├── parse-issue.md
+│   ├── build-blueprint.md
+│   ├── reproduce.md
+│   ├── report.md
+│   └── triage.md              # Unified command (build last)
 ├── skills/
-│   ├── issue-parser/
-│   │   └── SKILL.md           # [IMPLEMENTED] Parse bug reports
-│   ├── blueprint-builder/
-│   │   ├── SKILL.md           # [IMPLEMENTED] Generate Playground blueprints
-│   │   └── templates/
-│   │       └── default.json   # Default blueprint with Gutenberg
-│   └── repro-runner/
-│       └── SKILL.md           # [NOT IMPLEMENTED] Execute reproduction
+│   ├── playground.md          # Playground domain knowledge
+│   ├── playwright.md          # Playwright domain knowledge
+│   └── gutenberg.md           # Gutenberg domain knowledge
+├── subroutines/               # Shared logic (extract after commands work)
+├── bin/
+│   └── playground.sh          # Playground lifecycle (used by /reproduce)
 ├── fixtures/
-│   └── parsed-issues/         # Test fixtures for development
-│       └── *.json             # Parsed issue data (e.g., 74447.json)
-├── agents/
-├── hooks/
-└── spec.md                    # This file
+│   └── parsed-issues/         # Test fixtures
+├── .triage/                   # Runtime files (gitignored)
+│   ├── <issue>.parsed.json
+│   ├── <issue>.blueprint.json
+│   ├── <issue>.findings.json
+│   ├── playground.pid
+│   ├── playground.url
+│   └── playground.log
+├── spec.md
+└── CONTRIBUTING.md
 ```
-
-## Development & Testing
-
-Use `--fixture` flag to skip live parsing and load from fixtures:
-
-```bash
-/triage 74447 --fixture    # Loads fixtures/parsed-issues/74447.json
-/triage 74447              # Fetches live from GitHub
-```
-
-This allows testing individual skills without re-fetching issues each time.
-
-## Tooling
-
-| Tool | Purpose |
-|------|---------|
-| `gh` CLI | Fetch issue data, post comments (Phase 2) |
-| `npx @wp-playground/cli` | Spin up WordPress environment |
-| Playwright MCP | Browser automation for reproduction |
-
-## Security
-
-- Treat issue content as untrusted input
-- Only allowlist safe commands
-- No arbitrary code execution from issue content
 
 ---
 
-## Author
+## Data Flow
 
-David Smith
+```
+/parse-issue 74447
+        │
+        ▼
+.triage/74447.parsed.json
+        │
+        ▼
+/build-blueprint 74447
+        │
+        ▼
+.triage/74447.blueprint.json
+        │
+        ▼
+/reproduce 74447
+        │ (Playground + Playwright)
+        ▼
+.triage/74447.findings.json
+        │
+        ▼
+/report 74447
+        │
+        ▼
+Console output
+```
+
+---
+
+## File Formats
+
+### `.triage/<issue>.parsed.json`
+
+```json
+{
+  "issue": {
+    "number": 74447,
+    "title": "...",
+    "url": "https://github.com/..."
+  },
+  "environment": {
+    "wordpress": "latest",
+    "gutenberg": "latest",
+    "theme": "block"
+  },
+  "reproduction": {
+    "steps": ["Step 1", "Step 2"],
+    "expected": "What should happen",
+    "actual": "What actually happens"
+  },
+  "labels": ["[Type] Bug", "Global Styles"],
+  "parseable": true
+}
+```
+
+### `.triage/<issue>.blueprint.json`
+
+Standard Playground blueprint format. See `skills/playground.md`.
+
+### `.triage/<issue>.findings.json`
+
+```json
+{
+  "issue": 74447,
+  "environment": {
+    "wordpress": "6.7",
+    "gutenberg": "20.0",
+    "php": "8.2"
+  },
+  "result": "reproduced | not_reproduced | inconclusive",
+  "steps_executed": [
+    { "step": 1, "action": "...", "success": true },
+    { "step": 2, "action": "...", "success": false, "error": "..." }
+  ],
+  "evidence": {
+    "console_errors": [],
+    "screenshots": [],
+    "observations": "..."
+  },
+  "limitations": "..."
+}
+```
+
+---
+
+## Technical Requirements
+
+### Prerequisites
+
+| Tool | Purpose | Check |
+|------|---------|-------|
+| `gh` CLI | Fetch issues | `gh --version` |
+| `npx` | Run Playground | `npx --version` |
+| Playwright MCP | Browser automation | MCP server connected |
+
+### Plugin-Provided MCP Servers
+
+The plugin provides the following MCP server via `plugin.json`:
+
+| Server | Package | Purpose |
+|--------|---------|---------|
+| Context7 | `@upstash/context7-mcp` | Fetch up-to-date documentation for Gutenberg, WordPress, and related libraries |
+
+This enables the `gutenberg` skill to pull current documentation context rather than relying on training data.
+
+### Defaults
+
+- WordPress: `latest`
+- Gutenberg: latest from wordpress.org/plugins
+- Theme: Twenty Twenty-Five (block theme)
+- PHP: 8.2
+
+---
+
+## MVP Scope
+
+### In Scope
+
+- Parse bug reports from GitHub
+- Generate Playground blueprints
+- Reproduce via Playwright
+- Console output of results
+
+### Out of Scope (MVP)
+
+- GitHub comment posting
+- Version comparison (beta vs stable)
+- Complex multi-step Gutenberg flows
+- Confidence scoring
+- Issue labeling/closing
+
+---
+
+## Development Approach
+
+1. **Build commands independently** - Each command works standalone
+2. **Define clear contracts** - Input/output formats documented
+3. **Test with fixtures** - Use `.triage/` files for isolated testing
+4. **Extract subroutines** - Once patterns emerge, refactor shared logic
+5. **Compose into /triage** - Final command uses subroutines, not commands
+
+---
+
+## Security
+
+- Treat issue content as untrusted
+- No arbitrary code execution from issue text
+- Playground runs sandboxed
+- No credentials exposed
+
+---
+
+## Authors
+
+- David Smith
 
 ## Version
 
-1.0.0 (MVP)
+1.0.0-dev
