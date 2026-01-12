@@ -1,11 +1,11 @@
 ---
-description: Start Playground and attempt to reproduce the bug
+description: Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports
 allowed_args: issue
 ---
 
 # /reproduce
 
-Start Playground and attempt to reproduce the bug via Playwright.
+Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports.
 
 ## Arguments
 
@@ -13,21 +13,199 @@ Start Playground and attempt to reproduce the bug via Playwright.
 
 ## Input
 
-- `.triage/<issue>.parsed.json`
-- `.triage/<issue>.blueprint.json`
+Reads from:
+- `.triage/<issue>.parsed.json` - Parsed reproduction data
+- `.triage/<issue>.blueprint.json` - Playground blueprint
+
+Requires:
+- Playwright MCP server connected
+- WordPress Playground instance running
 
 ## Output
 
 Writes to `.triage/<issue>.findings.json`
 
+Screenshots saved to `.triage/<issue>/screenshots/`
+
+---
+
 ## Process
 
-1. Start Playground with blueprint
-2. Execute reproduction steps via Playwright MCP
-3. Capture evidence
-4. Stop Playground
-5. Write findings JSON
+### 1. Setup
 
-## TODO
+Create screenshots directory:
 
-- [ ] Implement
+```bash
+mkdir -p .triage/<issue>/screenshots
+```
+
+Start Playground with the blueprint:
+
+```bash
+./bin/playground.sh start .triage/<issue>.blueprint.json
+```
+
+Get Playground URL from running instance and initialize Playwright browser.
+
+### 2. Execute reproduction steps
+
+For each step in `reproduction.steps`, translate natural language into Playwright actions:
+
+| Step Pattern | Playwright Action |
+|--------------|-------------------|
+| "Visit `/wp-admin/...`" | Navigate to `{playground_url}/wp-admin/...` |
+| "Enter `...` in the ... input" | Find input, type text |
+| "Click the Save button" | Find button, click |
+| "Notice that ..." | Check for element presence/absence |
+
+**Implementation flow:**
+1. Use `mcp_playwright_browser_snapshot` to understand page structure
+2. Identify target element by role/label
+3. Perform action (navigate, type, click, etc.)
+4. Take screenshot: `.triage/<issue>/screenshots/0X-<description>.png`
+
+### 3. Collect evidence
+
+Throughout reproduction, collect:
+
+- **Console errors**: `mcp_playwright_browser_console_messages` with level="error"
+- **Network requests**: `mcp_playwright_browser_network_requests` (focus on failed requests)
+- **Screenshots**: After each major action and at final state
+- **Page snapshots**: For understanding UI state
+
+### 4. Determine reproduction result
+
+Analyze collected evidence and classify:
+
+| Result | Criteria |
+|--------|----------|
+| ✅ REPRODUCED | Observed behavior matches reported actual behavior |
+| ❌ NOT REPRODUCED | Observed behavior matches expected behavior instead |
+| ⚠️ INCONCLUSIVE | Could not complete steps, ambiguous results, or environment issues |
+
+### 5. Report findings
+
+Output structured results:
+
+```
+REPRODUCTION ATTEMPT COMPLETED
+================================
+
+Issue: #<issue>
+Playground: <url>
+Steps Attempted: <count> of <total>
+
+RESULT: [REPRODUCED | NOT REPRODUCED | INCONCLUSIVE]
+
+EVIDENCE:
+---------
+
+Console Errors:
+  - <error messages>
+
+Network Issues:
+  - <failed requests with status codes>
+
+Screenshots:
+  📸 .triage/<issue>/screenshots/01-initial-page.png
+  📸 .triage/<issue>/screenshots/02-after-action.png
+  ...
+
+Observed Behavior:
+  <description of what actually happened>
+
+Expected vs Actual:
+  Expected: <reproduction.expected>
+  Actual: <reproduction.actual>
+  Observed: <what we saw>
+
+CONCLUSION:
+-----------
+<detailed explanation of findings>
+```
+
+### 6. Cleanup
+
+Stop the Playground instance:
+
+```bash
+./bin/playground.sh stop
+```
+
+---
+
+## Playwright MCP Tools Reference
+
+### Navigation
+- `mcp_playwright_browser_navigate` - Go to URL
+- `mcp_playwright_browser_navigate_back` - Go back
+
+### Page Analysis
+- `mcp_playwright_browser_snapshot` - Get accessibility tree (preferred for automation)
+- `mcp_playwright_browser_take_screenshot` - Capture visual evidence
+
+### Interaction
+- `mcp_playwright_browser_click` - Click element
+- `mcp_playwright_browser_type` - Type text into input
+- `mcp_playwright_browser_press_key` - Press keyboard keys
+- `mcp_playwright_browser_fill_form` - Fill multiple fields at once
+
+### Evidence Collection
+- `mcp_playwright_browser_console_messages` - Get console logs/errors
+- `mcp_playwright_browser_network_requests` - Get network activity
+
+### Utilities
+- `mcp_playwright_browser_wait_for` - Wait for text/time
+- `mcp_playwright_browser_handle_dialog` - Dismiss popups
+
+---
+
+## WordPress-Specific Patterns
+
+Common WordPress admin element patterns:
+
+| Task | How to Find |
+|------|-------------|
+| Save button | `button[name="save"]`, `.editor-post-publish-button`, `button:has-text("Save")` |
+| Settings input | Look for `label` text, then find associated `input` |
+| Block inserter | `.block-editor-inserter__toggle`, `button[aria-label*="Add"]` |
+| Site Editor navigation | `.edit-site-*` classes, navigation landmarks |
+
+Use `mcp_playwright_browser_snapshot` to discover the actual structure.
+
+---
+
+## Special Cases
+
+### Site Editor Issues
+- Wait for Site Editor to fully load (look for `.edit-site-visual-editor`)
+- Canvas may be in an iframe - Playwright handles this automatically
+- Allow extra time for React to hydrate
+
+### Block Editor Issues
+- Wait for editor to load (`.block-editor`)
+- Block controls appear on hover - use `mcp_playwright_browser_hover` first
+
+---
+
+## Error Handling
+
+| Error | Action |
+|-------|--------|
+| Element not found | Screenshot current state, report as INCONCLUSIVE |
+| Page timeout | Check network/console for errors, report as INCONCLUSIVE |
+| Unexpected dialog | Use `mcp_playwright_browser_handle_dialog` to dismiss |
+| Ambiguous step | Note in findings, suggest manual verification |
+
+---
+
+## Screenshot Naming Convention
+
+```
+.triage/<issue>/screenshots/
+  01-initial-page.png
+  02-navigated-to-styles.png
+  03-entered-input.png
+  04-clicked-save.png
+  05-final-state.png
+```
