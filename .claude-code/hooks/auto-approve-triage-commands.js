@@ -5,9 +5,11 @@
  *
  * This hook automatically approves common commands used during triage:
  * - GitHub CLI for fetching issues
- * - Playground server management
- * - File operations in .triage directory
- * - Browser automation
+ * - Playground server management (start, stop, cleanup)
+ * - File operations in .triage and .claude-code directories
+ * - Browser automation via Playwright MCP
+ * - Todo list management for tracking triage progress
+ * - Process management and permissions
  */
 
 const stdin = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
@@ -35,6 +37,15 @@ const autoApprovePatterns = [
 
   // Settings directory operations
   /^mkdir -p .*\.claude-code/,
+  /^chmod \+x .*\.claude-code/,
+
+  // Browser screenshot/file operations
+  /^find \.triage/,
+  /^ls -la/,
+
+  // Process cleanup
+  /^kill -?\d+ 2>\/dev\/null/,
+  /^rm .*\.triage\/playground\.(pid|url|log)/,
 ];
 
 // Check if this is a Bash tool call
@@ -72,6 +83,15 @@ if (stdin.tool?.startsWith('mcp__plugin_gutenberg-issue-triage_playwright__') ||
   process.stdout.write(JSON.stringify({
     approved: true,
     reason: 'Auto-approved Playwright browser automation'
+  }));
+  process.exit(0);
+}
+
+// Check if this is a TodoWrite tool call (for tracking triage progress)
+if (stdin.tool === 'TodoWrite') {
+  process.stdout.write(JSON.stringify({
+    approved: true,
+    reason: 'Auto-approved todo list management for triage tracking'
   }));
   process.exit(0);
 }
