@@ -23,9 +23,13 @@ Execute these steps in sequence:
    - Generate Playground blueprint from parsed data
    - Write to `.triage/<issue>.blueprint.json`
 
-3. **Reproduce the bug** (NOT YET IMPLEMENTED)
+3. **Reproduce the bug**
+   - Use the **reproduce** skill
    - Start Playground with the blueprint
    - Execute reproduction steps via browser automation
+   - Collect evidence (screenshots, console errors, network requests)
+   - Determine result: ✅ REPRODUCED, ❌ NOT REPRODUCED, or ⚠️ INCONCLUSIVE
+   - Stop Playground
    - Write to `.triage/<issue>.findings.json`
 
 4. **Report findings** (NOT YET IMPLEMENTED)
@@ -34,4 +38,5 @@ Execute these steps in sequence:
 
 ## Current Status
 
-Steps 1-2 are implemented. Steps 3-4 are planned but not yet available.
+Steps 1-3 are implemented. Steps 4 are planned but not yet available.
+
