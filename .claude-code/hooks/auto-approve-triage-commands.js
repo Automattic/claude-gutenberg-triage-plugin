@@ -5,13 +5,14 @@
  *
  * This hook automatically approves common commands used during triage:
  * - GitHub CLI for fetching issues
- * - Playground server management (start, stop, status, logs via bin/playground.sh)
+ * - Playground server management (npx wp-playground server, pkill, bin/playground.sh)
  * - File operations in .triage and .claude-code directories (mkdir, cp, mv)
  * - Read-only shell commands (ls, cat, head, tail, pwd, wc, file, stat, du, df)
+ * - Background task output monitoring (tail on /tmp/claude task files)
  * - Text processing utilities (jq, grep, awk, sed -n)
  * - Browser automation via Playwright MCP
  * - Todo list management for tracking triage progress
- * - Process management and cleanup
+ * - Process management and cleanup (ps, sleep, kill)
  * - Skill invocations for triage workflows (parse, reproduce, report)
  * - Read-only codebase exploration (Glob, Grep, Read)
  * - Exploration and planning agents (Task tool with safe subagent types)
@@ -26,13 +27,14 @@ const autoApprovePatterns = [
   /^gh issue view \d+ --repo WordPress\/gutenberg/,
 
   // Playground server management
-  /^npx --yes @wp-playground\/cli@latest server --blueprint=/,
+  /^npx( --yes)? @wp-playground\/cli(@latest)? server/,
   /^\.\/bin\/playground\.sh (start|stop|status|url|logs)/,
   /^kill \$\(cat .*playground\.pid\)/,
   /^if \[ -f .*playground\.pid \]/,
+  /^pkill -f "wp-playground\/cli"/,
 
   // File operations in .triage directory (read and write)
-  /^mkdir -p (\.triage|.*\.triage)/,
+  /^mkdir -p \.triage/,
   /^cat .*\.triage\//,
   /^ls(-la)? .*\.triage/,
   /^tail .* .*\.triage\//,
@@ -47,6 +49,7 @@ const autoApprovePatterns = [
   /^cat /,
   /^head /,
   /^tail /,
+  /^tail -\d+ \/tmp\/claude\/.+\/tasks\/.+\.output$/,  // Background task output
   /^wc /,
   /^file /,
   /^stat /,
@@ -57,6 +60,7 @@ const autoApprovePatterns = [
   /^ps aux \| grep playground/,
   /^ps -ef/,
   /^sleep \d+/,
+  /^sleep \d+ &&/,  // sleep followed by other commands
 
   // Settings directory operations
   /^mkdir -p .*\.claude-code/,
