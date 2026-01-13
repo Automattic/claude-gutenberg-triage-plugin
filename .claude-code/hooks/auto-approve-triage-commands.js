@@ -10,6 +10,9 @@
  * - Browser automation via Playwright MCP
  * - Todo list management for tracking triage progress
  * - Process management and permissions
+ * - Skill invocations for triage workflows (parse, reproduce, report)
+ * - Read-only codebase exploration (Glob, Grep, Read)
+ * - Exploration and planning agents (Task tool with safe subagent types)
  */
 
 const stdin = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
@@ -94,6 +97,42 @@ if (stdin.tool === 'TodoWrite') {
     reason: 'Auto-approved todo list management for triage tracking'
   }));
   process.exit(0);
+}
+
+// Check if this is a Skill tool call (for invoking triage skills)
+if (stdin.tool === 'Skill') {
+  const skill = stdin.parameters?.skill || '';
+  // Auto-approve triage-related skills
+  if (skill.startsWith('gutenberg-issue-triage:')) {
+    process.stdout.write(JSON.stringify({
+      approved: true,
+      reason: 'Auto-approved triage skill invocation'
+    }));
+    process.exit(0);
+  }
+}
+
+// Check if this is a read-only codebase exploration tool
+if (['Glob', 'Grep', 'Read'].includes(stdin.tool)) {
+  // These are safe read-only tools for exploring the codebase
+  process.stdout.write(JSON.stringify({
+    approved: true,
+    reason: 'Auto-approved read-only codebase exploration'
+  }));
+  process.exit(0);
+}
+
+// Check if this is a Task tool for exploration agents
+if (stdin.tool === 'Task') {
+  const subagentType = stdin.parameters?.subagent_type || '';
+  // Auto-approve exploration and planning agents (safe, read-only)
+  if (['Explore', 'Plan', 'general-purpose'].includes(subagentType)) {
+    process.stdout.write(JSON.stringify({
+      approved: true,
+      reason: 'Auto-approved exploration/planning agent'
+    }));
+    process.exit(0);
+  }
 }
 
 // Not auto-approved - let user decide
