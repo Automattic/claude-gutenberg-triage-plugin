@@ -24,9 +24,7 @@ Execute these steps in sequence:
    - Write to `.triage/<issue>.blueprint.json`
 
 3. **Reproduce the bug**
-   - Use the **reproduce** skill
-   - Start Playground with the blueprint
-   - Execute reproduction steps via browser automation
+   - Execute reproduction steps using Playwright and Playground
    - Collect evidence (screenshots, console errors, network requests)
    - Determine result: ✅ REPRODUCED, ❌ NOT REPRODUCED, or ⚠️ INCONCLUSIVE
    - Stop Playground
