@@ -14,16 +14,41 @@ allowedTools:
 
 Summarize reproduction findings in a GitHub-comment-friendly format.
 
+## Usage
+
+This skill can be used in two ways:
+
+1. **As part of triage pipeline:** Automatically called after reproduction completes
+2. **Standalone:** Manually invoked to generate a report from existing triage data
+
+**Standalone usage example:**
+```
+User: "Use the report skill to generate a report for issue 74447"
+User: "Generate a report for issue 72364 using existing findings"
+```
+
 ## Arguments
 
 - `issue` (required): Issue number
 
 ## Input
 
-Reads from:
+This skill can be used standalone or as part of the triage pipeline.
 
-- `.triage/<issue>.findings.json` (required) - Reproduction results and evidence
-- `.triage/<issue>.parsed.json` (optional) - Issue context for better summary
+**Required files:**
+- `.triage/<issue>/<issue>.findings.json` - Reproduction results and evidence
+
+**Optional files (enhance the report):**
+- `.triage/<issue>/<issue>.parsed.json` - Issue context, labels, environment
+- `.triage/<issue>/screenshots/*.png` - Visual evidence
+
+**File locations:**
+- All triage data is stored in `.triage/<issue>/` directory
+- Issue number can be extracted from file path or provided as argument
+
+**If files don't exist:**
+- Inform user that triage data is missing
+- Suggest running the triage pipeline first
 
 ## Output
 
