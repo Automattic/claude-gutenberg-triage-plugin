@@ -1,11 +1,45 @@
 ---
+name: reproduce
 description: Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports
 allowed_args: issue
+allowedTools:
+  - Bash
+  - Read
+  - Write
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_navigate
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_navigate_back
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_snapshot
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_take_screenshot
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_click
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_type
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_press_key
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_fill_form
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_console_messages
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_network_requests
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_wait_for
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_handle_dialog
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_hover
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_select_option
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_close
 ---
 
 # /reproduce
 
 Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports.
+
+## Usage
+
+This skill can be used in two ways:
+
+1. **As part of triage pipeline:** Automatically called after blueprint generation
+2. **Standalone:** Manually invoked to re-run reproduction with existing data
+
+**Standalone usage examples:**
+```
+User: "Use the reproduce skill for issue 74447"
+User: "Reproduce issue 72364 with existing blueprint"
+User: "Re-run reproduction for 73872 to verify the bug"
+```
 
 ## Arguments
 
@@ -13,19 +47,31 @@ Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports.
 
 ## Input
 
-Reads from:
-- `.triage/<issue>.parsed.json` - Parsed reproduction data
-- `.triage/<issue>.blueprint.json` - Playground blueprint
+**Required files:**
+- `.triage/<issue>/<issue>.parsed.json` - Parsed reproduction data (for steps)
+- `.triage/<issue>/<issue>.blueprint.json` - Playground blueprint
 
-Requires:
+**Required services:**
 - Playwright MCP server connected
-- WordPress Playground instance running
+- WordPress Playground CLI available
+
+**If files don't exist:**
+- Inform user about missing prerequisites
+- Suggest running parse-issue and build-blueprint skills first
 
 ## Output
 
-Writes to `.triage/<issue>.findings.json`
+Writes to `.triage/<issue>/<issue>.findings.json`
 
 Screenshots saved to `.triage/<issue>/screenshots/`
+
+**Findings include:**
+- Reproduction result (reproduced/not_reproduced/inconclusive)
+- Environment details
+- Steps executed with success/failure status
+- Evidence (console errors, network requests, screenshots)
+- Observed vs expected behavior
+- Conclusion and recommendations
 
 ---
 

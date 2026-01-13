@@ -1,11 +1,29 @@
 ---
+name: build-blueprint
 description: Generate a Playground blueprint from parsed issue data
 allowed_args: issue
+allowedTools:
+  - Read
+  - Write
 ---
 
 # /build-blueprint
 
 Generate a WordPress Playground blueprint from parsed issue data.
+
+## Usage
+
+This skill can be used in two ways:
+
+1. **As part of triage pipeline:** Automatically called after parsing
+2. **Standalone:** Manually invoked to generate/regenerate a blueprint
+
+**Standalone usage examples:**
+```
+User: "Use the build-blueprint skill for issue 74447"
+User: "Generate a blueprint for issue 72364"
+User: "Rebuild the blueprint for 73872 with latest parsed data"
+```
 
 ## Arguments
 
@@ -13,11 +31,29 @@ Generate a WordPress Playground blueprint from parsed issue data.
 
 ## Input
 
-Reads from `.triage/<issue>.parsed.json`
+**Required files:**
+- `.triage/<issue>/<issue>.parsed.json` - Parsed issue data
+
+**Uses from parsed data:**
+- `environment.wordpress` - Target WordPress version
+- `environment.gutenberg` - Gutenberg version
+- `environment.theme` - Theme type (block/classic)
+- `reproduction.steps` - To determine landing page
+
+**If file doesn't exist:**
+- Inform user that parsed data is missing
+- Suggest running parse-issue skill first
 
 ## Output
 
-Writes to `.triage/<issue>.blueprint.json`
+Writes to `.triage/<issue>/<issue>.blueprint.json`
+
+**Blueprint includes:**
+- WordPress version
+- Gutenberg plugin configuration
+- Theme setup
+- Landing page URL
+- Any required test content (posts, pages)
 
 ---
 

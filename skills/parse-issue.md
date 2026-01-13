@@ -1,19 +1,54 @@
 ---
+name: parse-issue
 description: Parse a Gutenberg bug report into structured data
 allowed_args: issue
+allowedTools:
+  - Bash
+  - Write
+  - mcp__plugin_context7_context7__resolve-library-id
+  - mcp__plugin_context7_context7__query-docs
 ---
 
 # /parse-issue
 
 Parse a WordPress Gutenberg bug report into structured reproduction data.
 
+## Usage
+
+This skill can be used in two ways:
+
+1. **As part of triage pipeline:** Automatically called as the first step
+2. **Standalone:** Manually invoked to parse an issue
+
+**Standalone usage examples:**
+```
+User: "Use the parse-issue skill for issue 74447"
+User: "Parse issue https://github.com/WordPress/gutenberg/issues/73872"
+User: "Parse issue 72364 and check if triage is needed"
+```
+
 ## Arguments
 
 - `issue` (required): Issue number or GitHub URL
 
+## Input
+
+- GitHub issue data (fetched via `gh` CLI)
+- No prerequisite files required
+
 ## Output
 
-Writes to `.triage/<issue>.parsed.json`
+Writes to `.triage/<issue>/<issue>.parsed.json`
+
+**Output includes:**
+- Issue metadata (number, title, state, author, url)
+- Labels with descriptions
+- Affected blocks and features
+- Environment info
+- Reproduction steps
+- Expected vs actual behavior
+- **needs_triage:** Boolean indicating if full triage should proceed
+- **skip_reason:** Why triage was skipped (if applicable)
 
 ---
 
@@ -112,7 +147,43 @@ Extract from `### Description` or explicit sections:
 - What should happen (expected)
 - What actually happens (actual)
 
-### 9. Write parsed data
+### 9. Check if triage is needed
+
+Before proceeding with triage, check if maintainers have already confirmed and investigated the issue:
+
+**Skip triage if ANY of these conditions are met:**
+
+1. **Status indicates work in progress:**
+   - Has `[Status] In Progress` label
+   - Has `[Status] LGTM` label
+   - Has linked PR (check for "linked a pull request" in timeline)
+
+2. **Maintainers have confirmed the bug:**
+   - Comments from MEMBER or OWNER confirming reproduction
+   - Comments identifying specific code location (file paths, line numbers)
+   - Comments with "reproduced", "confirmed", "I can reproduce"
+
+3. **Technical details already provided:**
+   - Code file/location mentioned in comments
+   - Root cause identified
+   - Fix approach discussed
+
+**Set in parsed JSON:**
+```json
+{
+  "needs_triage": false,
+  "skip_reason": "maintainers_confirmed | in_progress | has_pr | code_identified"
+}
+```
+
+If issue needs triage (none of above conditions met):
+```json
+{
+  "needs_triage": true
+}
+```
+
+### 10. Write parsed data
 
 Write to `.triage/<issue>.parsed.json`:
 
@@ -155,12 +226,37 @@ Write to `.triage/<issue>.parsed.json`:
 }
 ```
 
-### 10. Output summary
+### 10. Gather additional context (optional)
+
+If specific features or components are mentioned, use Context7 to gather relevant documentation:
+
+**Using Context7:**
+
+1. Identify key features/components from labels and reproduction steps
+2. Query Context7 for WordPress/Gutenberg documentation:
+   - `resolve-library-id` with query about the feature
+   - `query-docs` to get specific implementation details
+
+**Examples:**
+
+- Issue mentions "Global Styles" → Query Context7: "How does WordPress Global Styles work?"
+- Issue mentions "Block Editor" → Query Context7: "WordPress Gutenberg block editor API"
+- Issue mentions specific block → Query Context7: "WordPress [Block Name] block implementation"
+
+This helps understand:
+- How the feature is supposed to work
+- Common patterns and APIs used
+- Related functionality that might be affected
+
+### 11. Output summary
 
 ```
 ISSUE PARSED: #<number>
 Title: <title>
 State: <open/closed>
+
+TRIAGE NEEDED: <Yes/No>
+<If No: REASON: <skip_reason>>
 
 LABELS:
 - [Type] Bug: An existing feature does not function as intended
