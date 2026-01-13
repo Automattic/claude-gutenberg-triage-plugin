@@ -118,7 +118,43 @@ Extract from `### Description` or explicit sections:
 - What should happen (expected)
 - What actually happens (actual)
 
-### 9. Write parsed data
+### 9. Check if triage is needed
+
+Before proceeding with triage, check if maintainers have already confirmed and investigated the issue:
+
+**Skip triage if ANY of these conditions are met:**
+
+1. **Status indicates work in progress:**
+   - Has `[Status] In Progress` label
+   - Has `[Status] LGTM` label
+   - Has linked PR (check for "linked a pull request" in timeline)
+
+2. **Maintainers have confirmed the bug:**
+   - Comments from MEMBER or OWNER confirming reproduction
+   - Comments identifying specific code location (file paths, line numbers)
+   - Comments with "reproduced", "confirmed", "I can reproduce"
+
+3. **Technical details already provided:**
+   - Code file/location mentioned in comments
+   - Root cause identified
+   - Fix approach discussed
+
+**Set in parsed JSON:**
+```json
+{
+  "needs_triage": false,
+  "skip_reason": "maintainers_confirmed | in_progress | has_pr | code_identified"
+}
+```
+
+If issue needs triage (none of above conditions met):
+```json
+{
+  "needs_triage": true
+}
+```
+
+### 10. Write parsed data
 
 Write to `.triage/<issue>.parsed.json`:
 
@@ -189,6 +225,9 @@ This helps understand:
 ISSUE PARSED: #<number>
 Title: <title>
 State: <open/closed>
+
+TRIAGE NEEDED: <Yes/No>
+<If No: REASON: <skip_reason>>
 
 LABELS:
 - [Type] Bug: An existing feature does not function as intended
