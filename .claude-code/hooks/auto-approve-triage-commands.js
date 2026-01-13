@@ -5,14 +5,17 @@
  *
  * This hook automatically approves common commands used during triage:
  * - GitHub CLI for fetching issues
- * - Playground server management (start, stop, cleanup)
- * - File operations in .triage and .claude-code directories
+ * - Playground server management (start, stop, status, logs via bin/playground.sh)
+ * - File operations in .triage and .claude-code directories (mkdir, cp, mv)
+ * - Read-only shell commands (ls, cat, head, tail, pwd, wc, file, stat, du, df)
+ * - Text processing utilities (jq, grep, awk, sed -n)
  * - Browser automation via Playwright MCP
  * - Todo list management for tracking triage progress
- * - Process management and permissions
+ * - Process management and cleanup
  * - Skill invocations for triage workflows (parse, reproduce, report)
  * - Read-only codebase exploration (Glob, Grep, Read)
  * - Exploration and planning agents (Task tool with safe subagent types)
+ * - Test image creation (ImageMagick convert command)
  */
 
 const stdin = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
@@ -24,18 +27,35 @@ const autoApprovePatterns = [
 
   // Playground server management
   /^npx --yes @wp-playground\/cli@latest server --blueprint=/,
+  /^\.\/bin\/playground\.sh (start|stop|status|url|logs)/,
   /^kill \$\(cat .*playground\.pid\)/,
   /^if \[ -f .*playground\.pid \]/,
 
-  // File operations in .triage directory
-  /^mkdir -p .*\.triage/,
+  // File operations in .triage directory (read and write)
+  /^mkdir -p (\.triage|.*\.triage)/,
   /^cat .*\.triage\//,
-  /^ls -la .*\.triage/,
+  /^ls(-la)? .*\.triage/,
   /^tail .* .*\.triage\//,
+  /^head .* .*\.triage\//,
   /^echo .* > .*\.triage\//,
+  /^cp .* \.triage\//,
+  /^mv .* \.triage\//,
+
+  // Read-only commands (anywhere, not just .triage)
+  /^ls( -[lah]+)?( .*)?$/,
+  /^pwd$/,
+  /^cat /,
+  /^head /,
+  /^tail /,
+  /^wc /,
+  /^file /,
+  /^stat /,
+  /^du /,
+  /^df /,
 
   // Process management
   /^ps aux \| grep playground/,
+  /^ps -ef/,
   /^sleep \d+/,
 
   // Settings directory operations
@@ -43,12 +63,22 @@ const autoApprovePatterns = [
   /^chmod \+x .*\.claude-code/,
 
   // Browser screenshot/file operations
-  /^find \.triage/,
-  /^ls -la/,
+  /^find (\.triage|\.playwright-mcp)/,
+  /^find \. -name/,
 
   // Process cleanup
   /^kill -?\d+ 2>\/dev\/null/,
   /^rm .*\.triage\/playground\.(pid|url|log)/,
+
+  // JSON/text processing (read-only utilities)
+  /^jq /,
+  /^grep /,
+  /^awk /,
+  /^sed -n/,  // sed in read-only mode only
+
+  // Image creation for testing
+  /^convert -size .* xc:/,  // ImageMagick for test images
+  /^for i in .* do convert /,  // Loop for creating multiple test images
 ];
 
 // Check if this is a Bash tool call
