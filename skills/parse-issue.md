@@ -13,13 +13,42 @@ allowedTools:
 
 Parse a WordPress Gutenberg bug report into structured reproduction data.
 
+## Usage
+
+This skill can be used in two ways:
+
+1. **As part of triage pipeline:** Automatically called as the first step
+2. **Standalone:** Manually invoked to parse an issue
+
+**Standalone usage examples:**
+```
+User: "Use the parse-issue skill for issue 74447"
+User: "Parse issue https://github.com/WordPress/gutenberg/issues/73872"
+User: "Parse issue 72364 and check if triage is needed"
+```
+
 ## Arguments
 
 - `issue` (required): Issue number or GitHub URL
 
+## Input
+
+- GitHub issue data (fetched via `gh` CLI)
+- No prerequisite files required
+
 ## Output
 
-Writes to `.triage/<issue>.parsed.json`
+Writes to `.triage/<issue>/<issue>.parsed.json`
+
+**Output includes:**
+- Issue metadata (number, title, state, author, url)
+- Labels with descriptions
+- Affected blocks and features
+- Environment info
+- Reproduction steps
+- Expected vs actual behavior
+- **needs_triage:** Boolean indicating if full triage should proceed
+- **skip_reason:** Why triage was skipped (if applicable)
 
 ---
 

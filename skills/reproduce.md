@@ -27,25 +27,51 @@ allowedTools:
 
 Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports.
 
+## Usage
+
+This skill can be used in two ways:
+
+1. **As part of triage pipeline:** Automatically called after blueprint generation
+2. **Standalone:** Manually invoked to re-run reproduction with existing data
+
+**Standalone usage examples:**
+```
+User: "Use the reproduce skill for issue 74447"
+User: "Reproduce issue 72364 with existing blueprint"
+User: "Re-run reproduction for 73872 to verify the bug"
+```
+
 ## Arguments
 
 - `issue` (required): Issue number
 
 ## Input
 
-Reads from:
-- `.triage/<issue>.parsed.json` - Parsed reproduction data
-- `.triage/<issue>.blueprint.json` - Playground blueprint
+**Required files:**
+- `.triage/<issue>/<issue>.parsed.json` - Parsed reproduction data (for steps)
+- `.triage/<issue>/<issue>.blueprint.json` - Playground blueprint
 
-Requires:
+**Required services:**
 - Playwright MCP server connected
-- WordPress Playground instance running
+- WordPress Playground CLI available
+
+**If files don't exist:**
+- Inform user about missing prerequisites
+- Suggest running parse-issue and build-blueprint skills first
 
 ## Output
 
-Writes to `.triage/<issue>.findings.json`
+Writes to `.triage/<issue>/<issue>.findings.json`
 
 Screenshots saved to `.triage/<issue>/screenshots/`
+
+**Findings include:**
+- Reproduction result (reproduced/not_reproduced/inconclusive)
+- Environment details
+- Steps executed with success/failure status
+- Evidence (console errors, network requests, screenshots)
+- Observed vs expected behavior
+- Conclusion and recommendations
 
 ---
 
