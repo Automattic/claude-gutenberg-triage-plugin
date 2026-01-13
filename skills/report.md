@@ -335,68 +335,55 @@ Print the formatted markdown to console. Keep the output concise - aim for 50-10
 
 ---
 
-## Example Output Structure
+## Report Template
+
+Use this concise format for GitHub comments:
 
 ```markdown
-## 🔍 Automated Triage Report
+## Triage Results
 
-**Issue:** #74447
+**Result:** ✅ Reproduced | ❌ Not Reproduced | ⚠️ Inconclusive
+**Environment:** WP {version}, Gutenberg {version}, PHP {version}
 
-### Test Environment
-
-**WordPress:** 6.7
-**Gutenberg:** 20.0
-**PHP:** 8.2
-**Theme:** Twenty Twenty-Five (block theme)
-**Platform:** WordPress Playground
-
-### ✅ Bug Reproduced
-
-The reported issue was successfully reproduced in the test environment.
-
-### Reproduction Steps
-
-1. Navigated to Global Styles → Additional CSS
-2. Entered `/* </style> */` in the CSS input
-3. Attempted to save changes
-4. Observed silent failure with HTTP 400 response
-
-**Observed Behavior:**
-No error message was displayed to the user despite the save request failing with a 400 status code.
-
-### Console Errors
+{1-2 sentence summary of what was tested and the result}
 
 <details>
-<summary>View console errors</summary>
-```
+<summary>Evidence</summary>
 
-Failed to save: HTTP 400 Bad Request
-
-```
+**Network:** `{method} {endpoint}` → {status}
+**Console:** {key errors if any}
+**Screenshots:** {count} captured
 
 </details>
 
-### Network Errors
+**Likely affected code:**
+- `{file/path}` - {reason}
+- `{file/path}` - {reason}
 
-<details>
-<summary>View network errors</summary>
+**Suggested fix:** {1-2 sentences on what needs to change}
 
-- `POST /wp-json/wp/v2/global-styles/...` - Status: `400` - Invalid CSS content
-
-</details>
-
-### Suspect Code Areas
-
-Based on the reproduction steps and error patterns, the following code areas may be relevant:
-
-- `packages/edit-site/src/components/global-styles/custom-css.js` - Additional CSS input component
-- `packages/edit-site/src/components/global-styles/save-button.js` - Save functionality and error handling
-- `packages/core-data/src/resolvers.js` - Global styles API save endpoint
-
-### Limitations
-
-Tested in WordPress Playground environment. Some browser-specific behaviors may differ.
+---
+<sub>Automated triage via WordPress Playground</sub>
 ```
+
+## Guidelines
+
+**Keep it short:**
+- Total length: 15-25 lines maximum
+- One summary sentence, not paragraphs
+- Bullet points, not prose
+- Only essential evidence in collapsible section
+
+**Focus on action:**
+- What's broken (1 sentence)
+- Where to look (file paths)
+- What to fix (brief suggestion)
+
+**Skip if not helpful:**
+- Don't include empty sections
+- Skip console errors if unrelated
+- Skip limitations unless critical
+- No "Next Steps" or "Impact Assessment" sections
 
 ---
 
