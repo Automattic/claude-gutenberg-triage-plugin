@@ -1,6 +1,11 @@
 ---
 description: Run full triage pipeline for a Gutenberg bug report
 allowed_args: issue
+allowedTools:
+  - Bash
+  - Read
+  - Write
+  - Skill
 ---
 
 # /triage
@@ -32,11 +37,17 @@ Execute these steps in sequence:
    - Stop Playground
    - Write to `.triage/<issue>.findings.json`
 
-4. **Report findings** (NOT YET IMPLEMENTED)
-   - Summarize reproduction results
+4. **Report findings**
+   - Use the **report** skill
+   - Summarize reproduction results in GitHub-comment format
+   - Identify suspect code areas based on labels and evidence
    - Output console summary
 
-## Current Status
+## Output
 
-Steps 1-3 are implemented. Steps 4 are planned but not yet available.
+All results are written to the `.triage/<issue>/` directory:
+- `<issue>.parsed.json` - Parsed issue data
+- `<issue>.blueprint.json` - Playground blueprint
+- `<issue>.findings.json` - Reproduction results and evidence
+- `screenshots/` - Screenshots captured during reproduction
 
