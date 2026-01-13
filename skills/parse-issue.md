@@ -5,6 +5,8 @@ allowed_args: issue
 allowedTools:
   - Bash
   - Write
+  - mcp__plugin_context7_context7__resolve-library-id
+  - mcp__plugin_context7_context7__query-docs
 ---
 
 # /parse-issue
@@ -159,7 +161,29 @@ Write to `.triage/<issue>.parsed.json`:
 }
 ```
 
-### 10. Output summary
+### 10. Gather additional context (optional)
+
+If specific features or components are mentioned, use Context7 to gather relevant documentation:
+
+**Using Context7:**
+
+1. Identify key features/components from labels and reproduction steps
+2. Query Context7 for WordPress/Gutenberg documentation:
+   - `resolve-library-id` with query about the feature
+   - `query-docs` to get specific implementation details
+
+**Examples:**
+
+- Issue mentions "Global Styles" → Query Context7: "How does WordPress Global Styles work?"
+- Issue mentions "Block Editor" → Query Context7: "WordPress Gutenberg block editor API"
+- Issue mentions specific block → Query Context7: "WordPress [Block Name] block implementation"
+
+This helps understand:
+- How the feature is supposed to work
+- Common patterns and APIs used
+- Related functionality that might be affected
+
+### 11. Output summary
 
 ```
 ISSUE PARSED: #<number>

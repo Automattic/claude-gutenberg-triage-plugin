@@ -6,6 +6,8 @@ allowedTools:
   - Read
   - Grep
   - Glob
+  - mcp__plugin_context7_context7__resolve-library-id
+  - mcp__plugin_context7_context7__query-docs
 ---
 
 # /report
@@ -179,7 +181,7 @@ If `evidence.network_errors` or failed network requests exist:
 
 #### Suspect Code References (if reproduced)
 
-Use codebase search to identify likely code locations based on:
+Use Context7 and codebase search to identify likely code locations based on:
 
 - Issue labels (e.g., `[Feature] Global Styles` → search Global Styles code)
 - Reproduction steps (e.g., "Additional CSS" → search CSS-related code)
@@ -188,10 +190,20 @@ Use codebase search to identify likely code locations based on:
 
 **Search strategy:**
 
-1. Extract feature/block names from labels
-2. Search for relevant files using semantic search
-3. Look for error messages in code
-4. Identify save/validation functions based on reproduction steps
+1. **Use Context7 to understand the feature:**
+   - Query for Gutenberg/WordPress documentation about the affected feature
+   - Understand the expected behavior and common implementation patterns
+   - Learn about related APIs and components
+
+   **Examples:**
+   - "How does WordPress Global Styles Additional CSS work?"
+   - "WordPress Gutenberg Site Editor error handling patterns"
+   - "WordPress REST API global styles endpoint"
+
+2. Extract feature/block names from labels
+3. Search for relevant files using semantic search
+4. Look for error messages in code
+5. Identify save/validation functions based on reproduction steps
 
 Format as:
 
