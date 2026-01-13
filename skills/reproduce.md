@@ -1,6 +1,26 @@
 ---
+name: reproduce
 description: Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports
 allowed_args: issue
+allowedTools:
+  - Bash
+  - Read
+  - Write
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_navigate
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_navigate_back
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_snapshot
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_take_screenshot
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_click
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_type
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_press_key
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_fill_form
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_console_messages
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_network_requests
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_wait_for
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_handle_dialog
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_hover
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_select_option
+  - mcp__plugin_gutenberg-issue-triage_playwright__browser_close
 ---
 
 # /reproduce

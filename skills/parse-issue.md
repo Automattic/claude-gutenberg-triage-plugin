@@ -1,6 +1,10 @@
 ---
+name: parse-issue
 description: Parse a Gutenberg bug report into structured data
 allowed_args: issue
+allowedTools:
+  - Bash
+  - Write
 ---
 
 # /parse-issue

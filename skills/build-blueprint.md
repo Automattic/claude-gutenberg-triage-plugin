@@ -1,6 +1,10 @@
 ---
+name: build-blueprint
 description: Generate a Playground blueprint from parsed issue data
 allowed_args: issue
+allowedTools:
+  - Read
+  - Write
 ---
 
 # /build-blueprint
