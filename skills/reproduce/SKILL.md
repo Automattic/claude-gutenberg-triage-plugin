@@ -79,20 +79,27 @@ For each step in `reproduction.steps`, translate natural language into Playwrigh
 | "Click the Save button" | Find button, click |
 | "Notice that ..." | Check for element presence/absence |
 
-**Implementation flow:**
-1. Use `mcp_playwright_browser_snapshot` to understand page structure
-2. Identify target element by role/label
-3. Perform action (navigate, type, click, etc.)
-4. Take screenshot: `.triage/<issue>/screenshots/0X-<description>.png`
+ **Implementation flow (TOKEN-EFFICIENT):**
+  1. Take ONE initial `browser_snapshot` to understand page structure
+  2. Execute ALL steps sequentially WITHOUT intermediate snapshots
+  3. Take ONE final `browser_snapshot` to capture end state
+  4. Take screenshot only at final state: `.triage/<issue>/screenshots/final-state.png`
 
-### 3. Collect evidence
+  **Only take additional snapshots if:**
+  - An action fails and you need to debug why
+  - The page structure changed unexpectedly mid-flow
 
-Throughout reproduction, collect:
+  **AVOID:** Snapshot-per-step pattern burns excessive tokens on Gutenberg's complex UI.
 
-- **Console errors**: `mcp_playwright_browser_console_messages` with level="error"
-- **Network requests**: `mcp_playwright_browser_network_requests` (focus on failed requests)
-- **Screenshots**: After each major action and at final state
-- **Page snapshots**: For understanding UI state
+### 3. Collect evidence (MINIMAL)
+
+  Collect evidence ONLY at the end of reproduction:
+
+  - **Console errors**: ONE call to `browser_console_messages` with level="error" after all steps
+  - **Network requests**: ONE call to `browser_network_requests` after all steps (only if errors suspected)
+  - **Screenshots**: Maximum 2 (initial state, final state)
+
+  **Skip:** Per-step evidence collection, intermediate snapshots, verbose logging.
 
 ### 4. Determine reproduction result
 
