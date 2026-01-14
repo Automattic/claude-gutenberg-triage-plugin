@@ -227,28 +227,19 @@ Write to `.triage/<issue>.parsed.json`:
 }
 ```
 
-### 10. Gather additional context (optional)
+ ### 10. Gather additional context (SKIP BY DEFAULT)
 
-If specific features or components are mentioned, use Context7 to gather relevant documentation:
+  **DO NOT query Context7 unless ALL of these conditions are met:**
+  1. Reproduction steps reference a feature you genuinely don't understand
+  2. Labels don't clarify what the feature does
+  3. The ambiguity would prevent reproduction
 
-**Using Context7:**
+  **If Context7 is needed:**
+  - Make exactly ONE query for the primary feature only
+  - Do NOT query for every label or block mentioned
+  - Prefer: "What is WordPress [Feature]?" over detailed API queries
 
-1. Identify key features/components from labels and reproduction steps
-2. Query Context7 for WordPress/Gutenberg documentation:
-   - `resolve-library-id` with query about the feature
-   - `query-docs` to get specific implementation details
-
-**Examples:**
-
-- Issue mentions "Global Styles" → Query Context7: "How does WordPress Global Styles work?"
-- Issue mentions "Block Editor" → Query Context7: "WordPress Gutenberg block editor API"
-- Issue mentions specific block → Query Context7: "WordPress [Block Name] block implementation"
-
-This helps understand:
-
-- How the feature is supposed to work
-- Common patterns and APIs used
-- Related functionality that might be affected
+  **Default behavior:** Skip this step entirely. Most Gutenberg issues are understandable from labels + steps alone.
 
 ### 11. Output summary
 
