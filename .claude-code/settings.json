@@ -1,0 +1,7 @@
+{
+  "hooks": {
+    "tool-call-permission": {
+      "command": "node .claude-code/hooks/auto-approve-triage-commands.js"
+    }
+  }
+}
