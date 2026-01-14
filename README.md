@@ -46,6 +46,82 @@ When done testing, stop Playground:
 ./bin/playground.sh stop
 ```
 
+## Image Upload
+
+The plugin can upload screenshots to CloudUp (Automattic's image hosting service) for sharing in GitHub issues and PRs.
+
+### Setup CloudUp (Recommended)
+
+Run the interactive setup wizard:
+
+```bash
+/gutenberg-issue-triage:setup-cloudup
+```
+
+Or run the setup script directly:
+
+```bash
+./bin/setup-cloudup.sh
+```
+
+This will:
+1. Show security warning about storing credentials locally
+2. Prompt for your CloudUp username (visible)
+3. Prompt for your CloudUp password (**hidden input** - not shown on screen)
+4. Validate credentials work by testing against CloudUp API
+5. Securely store them in `~/.claude/cloudup-credentials.json` (permissions: 600)
+
+**That's it!** No environment variables needed. Your credentials are automatically used for all uploads.
+
+### Alternative: Environment Variables
+
+If you prefer environment variables (not recommended - credentials visible in shell history):
+
+```bash
+# Username/Password (primary method)
+export CLOUDUP_USER="your-username"
+export CLOUDUP_PASS="your-password"
+
+# OR OAuth Token (if you have one)
+export CLOUDUP_TOKEN="your-oauth-token"
+```
+
+Note: The setup wizard (above) is more secure than environment variables.
+
+### Upload Screenshots
+
+```bash
+# Upload single file
+/gutenberg-issue-triage:upload-screenshots screenshot.png
+
+# Upload multiple files
+/gutenberg-issue-triage:upload-screenshots img1.png img2.png
+
+# Upload all screenshots from an issue
+/gutenberg-issue-triage:upload-screenshots .triage/74447/screenshots/*.png
+
+# Copy markdown to clipboard
+/gutenberg-issue-triage:upload-screenshots *.png --copy
+```
+
+The command returns markdown-formatted image links ready to paste into GitHub:
+
+```markdown
+![screenshot1.png](https://cldup.com/abc123xyz/image1.png)
+![screenshot2.png](https://cldup.com/abc123xyz/image2.png)
+```
+
+### Testing Without CloudUp
+
+Use mock backend for testing without real credentials:
+
+```bash
+export IMAGE_UPLOAD_MOCK=true
+/gutenberg-issue-triage:upload-screenshots test.png
+```
+
+This returns fake URLs without actually uploading anything.
+
 ## Updating
 
 ```bash
