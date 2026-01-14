@@ -10,7 +10,7 @@
  * - Read-only shell commands (ls, cat, head, tail, pwd, wc, file, stat, du, df)
  * - Background task output monitoring (tail on /tmp/claude task files)
  * - Text processing utilities (jq, grep, awk, sed -n)
- * - Browser automation via Playwright MCP
+ * - Browser automation via Chrome DevTools MCP (or Playwright MCP)
  * - Todo list management for tracking triage progress
  * - Process management and cleanup (ps, sleep, kill)
  * - Skill invocations for triage workflows (parse, reproduce, report)
@@ -114,12 +114,13 @@ if (['Write', 'Read', 'Edit'].includes(stdin.tool)) {
   }
 }
 
-// Check if this is a Playwright MCP tool call
-if (stdin.tool?.startsWith('mcp__plugin_gutenberg-issue-triage_playwright__') ||
+// Check if this is a browser automation MCP tool call (Chrome DevTools or Playwright)
+if (stdin.tool?.startsWith('mcp__chrome-devtools__') ||
+    stdin.tool?.startsWith('mcp__plugin_gutenberg-issue-triage_playwright__') ||
     stdin.tool?.startsWith('mcp__playwright__')) {
   process.stdout.write(JSON.stringify({
     approved: true,
-    reason: 'Auto-approved Playwright browser automation'
+    reason: 'Auto-approved browser automation (Chrome DevTools/Playwright)'
   }));
   process.exit(0);
 }

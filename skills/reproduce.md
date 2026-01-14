@@ -1,31 +1,30 @@
 ---
 name: reproduce
-description: Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports
+description: Execute reproduction steps using Chrome DevTools MCP to verify Gutenberg bug reports
 allowed_args: issue
 allowedTools:
   - Bash
   - Read
   - Write
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_navigate
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_navigate_back
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_snapshot
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_take_screenshot
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_click
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_type
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_press_key
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_fill_form
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_console_messages
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_network_requests
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_wait_for
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_handle_dialog
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_hover
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_select_option
-  - mcp__plugin_gutenberg-issue-triage_playwright__browser_close
+  - mcp__chrome-devtools__new_page
+  - mcp__chrome-devtools__navigate_page
+  - mcp__chrome-devtools__take_snapshot
+  - mcp__chrome-devtools__take_screenshot
+  - mcp__chrome-devtools__click
+  - mcp__chrome-devtools__fill
+  - mcp__chrome-devtools__fill_form
+  - mcp__chrome-devtools__press_key
+  - mcp__chrome-devtools__list_console_messages
+  - mcp__chrome-devtools__list_network_requests
+  - mcp__chrome-devtools__wait_for
+  - mcp__chrome-devtools__handle_dialog
+  - mcp__chrome-devtools__hover
+  - mcp__chrome-devtools__close_page
 ---
 
 # /reproduce
 
-Execute reproduction steps using Playwright MCP to verify Gutenberg bug reports.
+Execute reproduction steps using Chrome DevTools MCP to verify Gutenberg bug reports.
 
 ## Usage
 
@@ -52,7 +51,7 @@ User: "Re-run reproduction for 73872 to verify the bug"
 - `.triage/<issue>/<issue>.blueprint.json` - Playground blueprint
 
 **Required services:**
-- Playwright MCP server connected
+- Chrome DevTools MCP server connected
 - WordPress Playground CLI available
 
 **If files don't exist:**
@@ -91,31 +90,35 @@ Start Playground with the blueprint:
 ./bin/playground.sh start .triage/<issue>.blueprint.json
 ```
 
-Get Playground URL from running instance and initialize Playwright browser.
+Get Playground URL from running instance and open in Chrome DevTools:
+
+```
+mcp__chrome-devtools__new_page with url: <playground_url>
+```
 
 ### 2. Execute reproduction steps
 
-For each step in `reproduction.steps`, translate natural language into Playwright actions:
+For each step in `reproduction.steps`, translate natural language into DevTools actions:
 
-| Step Pattern | Playwright Action |
-|--------------|-------------------|
-| "Visit `/wp-admin/...`" | Navigate to `{playground_url}/wp-admin/...` |
-| "Enter `...` in the ... input" | Find input, type text |
-| "Click the Save button" | Find button, click |
-| "Notice that ..." | Check for element presence/absence |
+| Step Pattern | DevTools Action |
+|--------------|-----------------|
+| "Visit `/wp-admin/...`" | `navigate_page` with url |
+| "Enter `...` in the ... input" | `fill` with uid and value |
+| "Click the Save button" | `click` with uid |
+| "Notice that ..." | Check for element presence in snapshot |
 
 **Implementation flow:**
-1. Use `mcp_playwright_browser_snapshot` to understand page structure
-2. Identify target element by role/label
-3. Perform action (navigate, type, click, etc.)
+1. Use `take_snapshot` to understand page structure (returns uid-based tree)
+2. Identify target element by uid from snapshot
+3. Perform action (navigate, fill, click, etc.)
 4. Take screenshot: `.triage/<issue>/screenshots/0X-<description>.png`
 
 ### 3. Collect evidence
 
 Throughout reproduction, collect:
 
-- **Console errors**: `mcp_playwright_browser_console_messages` with level="error"
-- **Network requests**: `mcp_playwright_browser_network_requests` (focus on failed requests)
+- **Console errors**: `list_console_messages` (paginated - much more efficient than Playwright)
+- **Network requests**: `list_network_requests` (focus on failed requests)
 - **Screenshots**: After each major action and at final state
 - **Page snapshots**: For understanding UI state
 
@@ -172,6 +175,12 @@ CONCLUSION:
 
 ### 6. Cleanup
 
+Close the browser page:
+
+```
+mcp__chrome-devtools__close_page
+```
+
 Stop the Playground instance:
 
 ```bash
@@ -180,29 +189,43 @@ Stop the Playground instance:
 
 ---
 
-## Playwright MCP Tools Reference
+## Chrome DevTools MCP Tools Reference
 
 ### Navigation
-- `mcp_playwright_browser_navigate` - Go to URL
-- `mcp_playwright_browser_navigate_back` - Go back
+- `new_page` - Open URL in new page
+- `navigate_page` - Navigate current page (url, back, forward, reload)
 
 ### Page Analysis
-- `mcp_playwright_browser_snapshot` - Get accessibility tree (preferred for automation)
-- `mcp_playwright_browser_take_screenshot` - Capture visual evidence
+- `take_snapshot` - Get accessibility tree with uid identifiers (compact format)
+- `take_screenshot` - Capture visual evidence
 
 ### Interaction
-- `mcp_playwright_browser_click` - Click element
-- `mcp_playwright_browser_type` - Type text into input
-- `mcp_playwright_browser_press_key` - Press keyboard keys
-- `mcp_playwright_browser_fill_form` - Fill multiple fields at once
+- `click` - Click element by uid
+- `fill` - Type text into input by uid
+- `fill_form` - Fill multiple fields at once
+- `press_key` - Press keyboard keys
+- `hover` - Hover over element
 
 ### Evidence Collection
-- `mcp_playwright_browser_console_messages` - Get console logs/errors
-- `mcp_playwright_browser_network_requests` - Get network activity
+- `list_console_messages` - Get paginated console logs (efficient!)
+- `list_network_requests` - Get paginated network activity
 
 ### Utilities
-- `mcp_playwright_browser_wait_for` - Wait for text/time
-- `mcp_playwright_browser_handle_dialog` - Dismiss popups
+- `wait_for` - Wait for text to appear
+- `handle_dialog` - Accept/dismiss popups
+- `close_page` - Close browser page
+
+---
+
+## Chrome DevTools vs Playwright: Key Differences
+
+| Feature | Chrome DevTools | Playwright |
+|---------|-----------------|------------|
+| Element refs | `uid=1_23` | `ref=e23` |
+| Snapshots | Flat, compact | YAML, verbose |
+| Console | Paginated (~2KB) | Full dump (~200KB!) |
+| Fill input | `fill` with uid | `type` with ref |
+| Navigation | `new_page` / `navigate_page` | `browser_navigate` |
 
 ---
 
@@ -212,25 +235,25 @@ Common WordPress admin element patterns:
 
 | Task | How to Find |
 |------|-------------|
-| Save button | `button[name="save"]`, `.editor-post-publish-button`, `button:has-text("Save")` |
-| Settings input | Look for `label` text, then find associated `input` |
-| Block inserter | `.block-editor-inserter__toggle`, `button[aria-label*="Add"]` |
-| Site Editor navigation | `.edit-site-*` classes, navigation landmarks |
+| Save button | Look for `button` with "Save" text in snapshot |
+| Settings input | Find `textbox` or `input` by label in snapshot |
+| Block inserter | Look for button with "Add" in name/description |
+| Site Editor navigation | Look for navigation landmarks in snapshot |
 
-Use `mcp_playwright_browser_snapshot` to discover the actual structure.
+Use `take_snapshot` to discover the actual structure - returns compact uid-based tree.
 
 ---
 
 ## Special Cases
 
 ### Site Editor Issues
-- Wait for Site Editor to fully load (look for `.edit-site-visual-editor`)
-- Canvas may be in an iframe - Playwright handles this automatically
+- Wait for Site Editor to fully load (look for editor elements in snapshot)
+- Canvas may be in an iframe - DevTools handles this automatically
 - Allow extra time for React to hydrate
 
 ### Block Editor Issues
-- Wait for editor to load (`.block-editor`)
-- Block controls appear on hover - use `mcp_playwright_browser_hover` first
+- Wait for editor to load (look for block-editor elements)
+- Block controls appear on hover - use `hover` first
 
 ---
 
@@ -240,7 +263,7 @@ Use `mcp_playwright_browser_snapshot` to discover the actual structure.
 |-------|--------|
 | Element not found | Screenshot current state, report as INCONCLUSIVE |
 | Page timeout | Check network/console for errors, report as INCONCLUSIVE |
-| Unexpected dialog | Use `mcp_playwright_browser_handle_dialog` to dismiss |
+| Unexpected dialog | Use `handle_dialog` to dismiss |
 | Ambiguous step | Note in findings, suggest manual verification |
 
 ---
